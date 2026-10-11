@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lvbitpack"
-version = "0.1.0"
-description = "Pack and unpack LabVIEW boolean arrays to and from their MSB-first bit-packed binary form"
+version = "0.2.0"
+description = "Pack and unpack LabVIEW boolean arrays: bit-packed bytes and Boolean Array To Number conversion"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -22,6 +22,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "pytest", "build", "twine"]
+
+[project.scripts]
+lvbitpack = "lvbitpack._cli:main"
 
 [project.urls]
 Homepage = "https://lianes8studio.com"
