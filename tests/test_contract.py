@@ -4,7 +4,28 @@ import lvbitpack
 
 # The public API. Add every exported name here as the library grows; this list is the
 # contract and the test below fails if the module and this list disagree.
-PUBLIC_API: list[str] = ["pack_bools", "pack_flattened", "unpack_bools", "unpack_flattened"]
+PUBLIC_API: list[str] = [
+    "I8",
+    "I16",
+    "I32",
+    "I64",
+    "IntType",
+    "SignExtension",
+    "U8",
+    "U16",
+    "U32",
+    "U64",
+    "bools_to_bytes",
+    "bools_to_number",
+    "bytes_to_bools",
+    "bytes_to_number",
+    "number_to_bools",
+    "number_to_bytes",
+    "pack_bools",
+    "pack_flattened",
+    "unpack_bools",
+    "unpack_flattened",
+]
 
 
 def test_all_lists_exactly_the_public_api() -> None:
