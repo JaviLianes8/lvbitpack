@@ -37,12 +37,15 @@ flattened helpers read and write the count for you.
 
 LabVIEW stores a flattened boolean array as packed bits, one bit per boolean,
 MSB-first within each byte, prefixed by a 32-bit big-endian element count and
-padded to a byte boundary. Python's own tools do not speak this convention:
-`int.to_bytes`, `struct` and the generic bit libraries (`bitarray`, `bitstring`)
-have their own bit order and no notion of the LabVIEW count header, so they
-cannot read a flattened boolean array or produce one a LabVIEW VI will accept.
-No maintained Python package covers this LabVIEW-specific packing. lvbitpack does
-exactly that and nothing else: zero dependencies, fully typed.
+padded to a byte boundary. The MSB-first packing itself, the only non-trivial
+piece, is not special: `bitarray` supports MSB-first (big-endian) bit order and
+`bitstring` numbers bits MSB0 by default, so either already does that part. What
+they do not add is the LabVIEW-specific 32-bit big-endian count header that wraps
+the bits, so on their own they neither read a flattened boolean array nor produce
+one a LabVIEW VI will accept. `lvbitpack` is a thin convenience over that exact
+form, the MSB-first bits plus the count header and the final-byte padding, and
+nothing else: zero dependencies, fully typed, and no extra package to install for
+a one-field decode.
 
 ## License
 
