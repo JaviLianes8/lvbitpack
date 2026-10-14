@@ -94,3 +94,15 @@ a contract in the same file. The table is the rerun at 24b1cf0: 46 mutations, 44
 | M44 | number length not limited | `_cli.py` | killed | `tests/test_cli.py::test_data_errors_go_to_stderr_with_exit_one[args4-101` |
 | M45 | prefixed numbers refused | `_cli.py` | killed | `tests/test_cli.py::test_commands[args5-00000001]` |
 | M46 | closed pipe not silenced | `_cli_io.py` | killed | `tests/test_cli_process.py::test_a_closed_output_pipe_exits_one_quietly` |
+
+## Independent QA lenses (item 19)
+
+Each lens was a fresh reviewer that read the certification rules and CERT-1.0.md first,
+worked in its own clone and on the build machines under its own turn, ran things rather
+than reading, and reported back privately.
+
+| Lens | Round | Head | Verdict | Findings and outcome |
+| --- | --- | --- | --- | --- |
+| a. API and docs | 1 | 6cc718d | FAIL (1 high, 1 medium, 6 low, info) | 112 probes, 48 doctests, 26 GUIDE and 2 README examples, 35 CLI checks, 63 behaviour expressions against 0.2.0, strict consumers. README claimed a LabVIEW 2026 check before the captures existed; byte inputs narrowed versus 0.2.0; `IntType` refused NumPy widths and `contains` changed silently; hints stricter than the 0/1 runtime; private module names in `help()`; CLI changes and one cause missing or wrong in the CHANGELOG; parameter naming reviewed and kept deliberately. Fixed in 5cb3cd3 (the LabVIEW claim waits for the captures) |
+| c. Adversarial and robustness | 1 | 6cc718d | FAIL (2 medium, 5 low, info) | 400,000 seeded API calls on 8 seeds, 100,000 oracle round trips, 60,000 in-process and 450 subprocess CLI runs, 16 threads with 480,000 calls, 19 scaling shapes all linear. Mocks and hostile int subclasses leaked their own errors through message quoting; option checks compared before type checks; a bytes subclass's `__bytes__` and a released view leaked; `parse` called str-subclass methods; unknown `SignExtension` names gave a plain enum error; an ASCII-only stderr was treated as a gone reader. Fixed in 5cb3cd3 |
+| e. Contract strength | 1 | 6cc718d | FAIL until its contracts were added | 115 blind mutations: 84 killed, 8 proven equivalent (differential digests over up to 1.7 million cases each), 23 survivors; its 23 contracts added in 6a28a86 (`tests/test_contract_strength.py`, `tests/test_contract_strength_cli.py`) |
