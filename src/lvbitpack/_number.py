@@ -1,131 +1,86 @@
-"""LabVIEW Boolean Array To Number and Number To Boolean Array semantics.
+"""LabVIEW's Boolean Array To Number and Number To Boolean Array for integer outputs.
 
-Element index 0 is the least significant bit (LSB), matching LabVIEW. The array's
-bits map directly onto a single fixed-width integer, so this is distinct from a
-flattened boolean array (which prefixes a count and stores one byte per element).
+Element 0 of the array is the least significant bit. The bits map straight onto one
+fixed-width integer; there is no count and no byte per element, unlike a flattened array.
 """
 
 from __future__ import annotations
 
-import enum
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Iterable
 
-_VALID_BITS = (8, 16, 32, 64)
-
-
-class SignExtension(enum.Enum):
-    """How a boolean array shorter than the integer width is padded.
-
-    These mirror LabVIEW's right-click "Sign Extension Mode" on Boolean Array To
-    Number. The padding bit fills every position above the supplied elements.
-    """
-
-    NEVER = "never"
-    IF_SIGNED = "if_signed"
-    ALWAYS = "always"
+from ._errors import BitpackError, as_bools, as_int, quote
+from ._types import IntType, SignExtension, check_type
 
 
-@dataclass(frozen=True)
-class IntType:
-    """A fixed-width integer representation: bit width plus signedness."""
-
-    bits: int
-    signed: bool
-
-    def __post_init__(self) -> None:
-        if self.bits not in _VALID_BITS:
-            raise ValueError(f"bits must be one of {_VALID_BITS}, got {self.bits}")
-
-    @property
-    def name(self) -> str:
-        """The short name, for example "u8" or "i32"."""
-        return f"{'i' if self.signed else 'u'}{self.bits}"
-
-    @property
-    def mask(self) -> int:
-        """The all-ones mask covering the type's bit width."""
-        return (1 << self.bits) - 1
-
-    @property
-    def min(self) -> int:
-        """The smallest value the type can hold."""
-        return -(1 << (self.bits - 1)) if self.signed else 0
-
-    @property
-    def max(self) -> int:
-        """The largest value the type can hold."""
-        return (1 << (self.bits - 1)) - 1 if self.signed else self.mask
-
-    def contains(self, number: int) -> bool:
-        """Whether number fits in this type without overflow."""
-        return self.min <= number <= self.max
-
-    @classmethod
-    def parse(cls, text: str) -> IntType:
-        """Parse a name such as "u8", "I16", or "int32" into an IntType."""
-        key = text.strip().lower()
-        prefixes = {"u": False, "uint": False, "i": True, "int": True}
-        for prefix, signed in prefixes.items():
-            if key.startswith(prefix):
-                digits = key[len(prefix) :]
-                if digits.isdigit():
-                    return cls(bits=int(digits), signed=signed)
-        raise ValueError(f"unknown integer type {text!r}; use u8/u16/u32/u64 or i8/i16/i32/i64")
+def _check_mode(mode: object) -> SignExtension:
+    if not isinstance(mode, SignExtension):
+        raise BitpackError(f"sign_extension must be a SignExtension, not {quote(mode)}")
+    return mode
 
 
-U8 = IntType(8, False)
-U16 = IntType(16, False)
-U32 = IntType(32, False)
-U64 = IntType(64, False)
-I8 = IntType(8, True)
-I16 = IntType(16, True)
-I32 = IntType(32, True)
-I64 = IntType(64, True)
-
-
-def _pad_bit(values: Sequence[bool], int_type: IntType, mode: SignExtension) -> int:
-    """The value (0 or 1) used to fill positions above the supplied elements."""
-    if mode is SignExtension.NEVER:
+def _pad_bit(bits: list[bool], int_type: IntType, mode: SignExtension) -> int:
+    """The bit that fills every position above the supplied elements."""
+    if mode is SignExtension.NEVER or not bits:
         return 0
-    last_is_true = bool(values) and bool(values[-1])
-    if mode is SignExtension.ALWAYS:
-        return 1 if last_is_true else 0
-    return 1 if (int_type.signed and last_is_true) else 0
+    if mode is SignExtension.IF_SIGNED and not int_type.signed:
+        return 0
+    return 1 if bits[-1] else 0
 
 
 def bools_to_number(
-    values: Sequence[bool],
+    values: Iterable[bool],
     int_type: IntType,
     *,
     sign_extension: SignExtension = SignExtension.IF_SIGNED,
 ) -> int:
-    """Convert a boolean array to a number, LabVIEW Boolean Array To Number.
+    """Convert a Boolean array to an integer, as LabVIEW's Boolean Array To Number does.
 
-    Element 0 is the least significant bit. Elements beyond the integer width are
-    dropped. A short array is padded per sign_extension. Signed types return a
-    two's complement value. The default sign_extension matches LabVIEW's default.
+    Element 0 is the least significant bit. Elements beyond the width are dropped; a short
+    array is padded as ``sign_extension`` says (LabVIEW's default is ``IF_SIGNED``). A signed
+    type gives the two's complement value. ``values`` is any finite iterable of
+    ``True``/``False``, ``0``/``1`` or NumPy booleans; a string is refused.
+
+    >>> from lvbitpack import I8, U8, SignExtension, bools_to_number
+    >>> bools_to_number([False, True], U8), bools_to_number([False, True], I8)
+    (2, -2)
+    >>> bools_to_number([False, False, True, False, True], U8, sign_extension=SignExtension.ALWAYS)
+    244
+    >>> bools_to_number([True] * 9, U8)
+    255
     """
-    pad = _pad_bit(values, int_type, sign_extension)
+    int_type = check_type(int_type)
+    mode = _check_mode(sign_extension)
+    bits = as_bools(values)
+    width = int_type.bits
     raw = 0
-    for index in range(int_type.bits):
-        bit = (1 if values[index] else 0) if index < len(values) else pad
-        raw |= bit << index
+    for index, bit in enumerate(bits[:width]):
+        if bit:
+            raw |= 1 << index
+    if len(bits) < width and _pad_bit(bits, int_type, mode):
+        raw |= int_type.mask ^ ((1 << len(bits)) - 1)
     if int_type.signed and raw > int_type.max:
-        raw -= 1 << int_type.bits
+        raw -= 1 << width
     return raw
 
 
 def number_to_bools(number: int, int_type: IntType) -> list[bool]:
-    """Convert a number to a boolean array, LabVIEW Number To Boolean Array.
+    """Convert an integer to a Boolean array, as LabVIEW's Number To Boolean Array does.
 
-    The result has one element per bit of the type, element 0 holding the least
-    significant bit of the two's complement representation. Raises ValueError when
-    number does not fit the type.
+    The result has one element per bit of the type (8, 16, 32 or 64); element 0 holds the
+    least significant bit of the two's complement form. ``number`` must fit the type: LabVIEW
+    would have coerced it to the wire's type first, so a value outside it is refused.
+
+    >>> from lvbitpack import I8, U8, number_to_bools
+    >>> number_to_bools(2, U8)
+    [False, True, False, False, False, False, False, False]
+    >>> number_to_bools(-2, I8) == [False] + [True] * 7
+    True
     """
-    if not int_type.contains(number):
-        raise ValueError(
-            f"{number} is out of range for {int_type.name} [{int_type.min}, {int_type.max}]"
+    int_type = check_type(int_type)
+    value = as_int(number, "number")
+    if not int_type.contains(value):
+        raise BitpackError(
+            f"{quote(value)} is out of range for {int_type.name} [{int_type.min}, {int_type.max}]"
         )
-    raw = number & int_type.mask
+    raw = value & int_type.mask
     return [bool((raw >> index) & 1) for index in range(int_type.bits)]
