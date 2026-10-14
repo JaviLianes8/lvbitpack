@@ -11,8 +11,9 @@ from collections.abc import Iterable
 from typing import Literal
 
 from ._errors import BitpackError, Buffer, as_buffer, as_int, plain_str, quote
+from ._modes import SignExtension
 from ._number import bools_to_number, number_to_bools
-from ._types import IntType, SignExtension, check_type
+from ._types import IntType, check_type
 
 ByteOrder = Literal["big", "little"]
 
@@ -58,7 +59,8 @@ def bytes_to_number(data: Buffer, int_type: IntType, *, byteorder: ByteOrder = "
     raw = as_buffer(data)
     width = int_type.bits // 8
     if len(raw) != width:
-        raise BitpackError(f"{int_type.name} needs exactly {width} bytes, got {len(raw)}")
+        unit = "byte" if width == 1 else "bytes"
+        raise BitpackError(f"{int_type.name} needs exactly {width} {unit}, got {len(raw)}")
     return int.from_bytes(raw, order, signed=int_type.signed)
 
 

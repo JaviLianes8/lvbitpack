@@ -11,9 +11,10 @@
 from ._bytes import bools_to_bytes, bytes_to_bools, bytes_to_number, number_to_bytes
 from ._errors import BitpackError
 from ._flatten import pack_flattened, unpack_flattened
+from ._modes import SignExtension
 from ._number import bools_to_number, number_to_bools
 from ._pack import pack_bools, unpack_bools
-from ._types import I8, I16, I32, I64, U8, U16, U32, U64, IntType, SignExtension
+from ._types import I8, I16, I32, I64, U8, U16, U32, U64, IntType
 
 __version__ = "1.0.0"
 

@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 MESSAGE_LIMIT = 300
 
 
+def printable(text: str) -> str:
+    """``text`` with control characters and non-ASCII escaped, so argv cannot drive a terminal."""
+    return "".join(
+        char if " " <= char <= "~" else char.encode("unicode_escape").decode("ascii")
+        for char in text
+    )
+
+
 def silence(stream: object) -> None:
     """Point ``stream``'s descriptor at the null device after its reader went away.
 
@@ -60,6 +68,7 @@ class Parser(argparse.ArgumentParser):
     """An argument parser whose errors are bounded and survive a closed stderr."""
 
     def error(self, message: str) -> NoReturn:
+        message = printable(message)
         if len(message) > MESSAGE_LIMIT:
             message = message[:MESSAGE_LIMIT] + "..."
         self.exit(2, f"{self.format_usage()}{self.prog}: error: {message}\n")

@@ -151,9 +151,13 @@ as its raw bytes in memory order; text and lists are refused.
 
 Every refusal raises `BitpackError`, a subclass of `ValueError`. Messages quote at most 40
 characters of a bad value and describe integers wider than 128 bits by their size, so huge
-input is never echoed, and they are plain ASCII. An exception raised by your own object's
-`__index__`, `__iter__` or iterator (other than `TypeError`) passes through unchanged.
-`SignExtension("sometimes")` raises `BitpackError` too.
+input is never echoed, and they are plain ASCII. An object that cannot be iterated, indexed
+or read as a buffer at all (a `TypeError` from `iter()`, `__index__` or the buffer
+protocol) is refused with `BitpackError`; any other exception your own object raises (from
+`__index__`, `__iter__`, while iterating, or from `__buffer__` on Python 3.12 and later)
+passes through unchanged. `SignExtension(...)` with anything but a member or one of its
+three names raises `BitpackError` too. Buffers of Python objects (a NumPy `object` array)
+are refused rather than read as pointers.
 
 | Situation | Message starts with |
 | --- | --- |

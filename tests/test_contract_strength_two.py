@@ -32,12 +32,12 @@ def test_an_index_width_is_stored_as_a_plain_int() -> None:
 
 
 def test_contains_reads_index_integers_through_index() -> None:
-    assert I8.contains(_Index(5)) and not I8.contains(_Index(200))  # type: ignore[arg-type]
+    assert I8.contains(_Index(5)) and not I8.contains(_Index(200))
 
 
 def test_an_instance_level_index_attribute_is_not_an_integer() -> None:
     fake = types.SimpleNamespace(__index__=lambda: 5)
-    assert I8.contains(fake) is False  # type: ignore[arg-type]
+    assert I8.contains(fake) is False
 
 
 class _Liar(int):

@@ -2,39 +2,12 @@
 
 from __future__ import annotations
 
-import enum
 from dataclasses import dataclass
 
 from ._errors import BitpackError, as_int, is_integer, plain_str, quote, type_name
 
 _VALID_BITS = (8, 16, 32, 64)
 _PREFIXES = (("uint", False), ("int", True), ("u", False), ("i", True))
-
-
-class SignExtension(enum.Enum):
-    """How Boolean Array To Number pads an array shorter than the integer width.
-
-    LabVIEW sets this by right-clicking the node; ``IF_SIGNED`` is LabVIEW's default.
-
-    - ``NEVER``: pad with FALSE.
-    - ``IF_SIGNED``: pad unsigned outputs with FALSE and signed outputs with the last element.
-    - ``ALWAYS``: pad with the last element.
-
-    >>> from lvbitpack import I8, SignExtension, bools_to_number
-    >>> array = [False, True, False, True]
-    >>> [bools_to_number(array, I8, sign_extension=mode) for mode in SignExtension]
-    [10, -6, -6]
-    >>> SignExtension("always")
-    <SignExtension.ALWAYS: 'always'>
-    """
-
-    NEVER = "never"
-    IF_SIGNED = "if_signed"
-    ALWAYS = "always"
-
-    @classmethod
-    def _missing_(cls, value: object) -> SignExtension:
-        raise BitpackError(f"no sign extension mode {quote(value)}; use never, if_signed or always")
 
 
 @dataclass(frozen=True)
@@ -105,7 +78,7 @@ class IntType:
         """
         return (1 << (self.bits - 1)) - 1 if self.signed else self.mask
 
-    def contains(self, number: int) -> bool:
+    def contains(self, number: object) -> bool:
         """Whether ``number`` is an integer within the type's range.
 
         Any ``__index__`` integer counts; ``bool``, floats and other types are never contained.
@@ -116,7 +89,11 @@ class IntType:
         """
         if not is_integer(number):
             return False
-        return self.min <= as_int(number, "number") <= self.max
+        try:
+            value = as_int(number, "number")
+        except BitpackError:  # an __index__ that refuses, such as a NumPy array's
+            return False
+        return self.min <= value <= self.max
 
     @classmethod
     def parse(cls, text: str) -> IntType:
@@ -152,7 +129,14 @@ I64 = IntType(64, True)
 
 
 def check_type(int_type: object) -> IntType:
-    """``int_type`` when it is an ``IntType``; anything else is refused."""
-    if not isinstance(int_type, IntType):
+    """``int_type`` as a plain ``IntType``; anything else is refused.
+
+    A subclass is rebuilt from its two fields, so overridden methods change nothing.
+    """
+    kind = type(int_type)
+    if kind is IntType:
+        return int_type  # type: ignore[return-value]
+    if not issubclass(kind, IntType):
         raise BitpackError(f"int_type must be an IntType such as U8, not {type_name(int_type)}")
-    return int_type
+    bits = object.__getattribute__(int_type, "bits")
+    return IntType(bits, object.__getattribute__(int_type, "signed"))

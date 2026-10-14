@@ -9,7 +9,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from ._errors import BitpackError, as_bools, as_int, quote
-from ._types import IntType, SignExtension, check_type
+from ._modes import SignExtension
+from ._types import IntType, check_type
 
 
 def _check_mode(mode: object) -> SignExtension:

@@ -36,7 +36,8 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
 - Byte arguments accept any buffer-protocol object and read its raw bytes, so a buffer
   of wide items (an `array.array("H")`, a NumPy `uint16` array) is measured in bytes; 0.2.0
   measured it in items. Lists of integers, which 0.2.0 read as bytes, are refused.
-- `SignExtension("...")` with an unknown name raises `BitpackError` (still a `ValueError`).
+- `SignExtension(...)` with anything but a member or one of its three names raises
+  `BitpackError` (still a `ValueError`); the enum moved to its own private module.
 - Numbers are checked: `bool` and non-integers are refused, `__index__` integers (NumPy)
   accepted, and messages never print a huge integer (0.2.0 failed inside its own message
   for integers beyond Python's 4300-digit printing limit).

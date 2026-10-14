@@ -74,7 +74,7 @@ def test_lists_text_and_numbers_are_not_buffers(data: object) -> None:
 def test_a_released_memoryview_is_refused() -> None:
     view = memoryview(b"\x00\x01")
     view.release()
-    with pytest.raises(BitpackError, match="released memoryview"):
+    with pytest.raises(BitpackError, match=r"cannot be read as bytes \(memoryview\)"):
         bytes_to_number(view, U16)
 
 

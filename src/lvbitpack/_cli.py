@@ -9,8 +9,9 @@ from . import __version__
 from ._cli_io import MESSAGE_LIMIT, Parser, finish, write
 from ._errors import BitpackError, quote
 from ._flatten import pack_flattened, unpack_flattened
+from ._modes import SignExtension
 from ._number import bools_to_number, number_to_bools
-from ._types import IntType, SignExtension
+from ._types import IntType
 
 _TRUE, _FALSE, _SKIP = frozenset("1tT"), frozenset("0fF"), frozenset(" ,_")
 _NUMBER_LIMIT = 100  # characters; a 64-bit value never needs more
