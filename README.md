@@ -1,8 +1,12 @@
 # lvbitpack
 
-Pack and unpack LabVIEW boolean arrays: compact bit-packed bytes and the
-**Boolean Array To Number** / **Number To Boolean Array** conversion. Zero
-dependencies, fully typed.
+LabVIEW Boolean arrays in pure Python: **Boolean Array To Number** with its three sign
+extension modes, **Number To Boolean Array**, the flattened form LabVIEW writes for a Boolean
+array, and compact bit packing. No dependencies, fully typed, Python 3.10 or newer.
+
+The full reference is the [guide](https://github.com/JaviLianes8/lvbitpack/blob/main/GUIDE.md);
+every release is described in the
+[changelog](https://github.com/JaviLianes8/lvbitpack/blob/main/CHANGELOG.md).
 
 ## Install
 
@@ -10,106 +14,87 @@ dependencies, fully typed.
 pip install lvbitpack
 ```
 
-## Boolean Array To Number
+## The problem
 
-LabVIEW's Boolean Array To Number maps a boolean array onto a single fixed-width
-integer. Element index 0 is the least significant bit (LSB).
+A LabVIEW program that reads digital lines, status registers or flag words often turns a
+Boolean array into one integer with Boolean Array To Number, and back with Number To Boolean
+Array. Element 0 is the least significant bit, elements past the width are dropped, and a
+short array is padded by a per-node setting (Sign Extension Mode) that most people never
+look at, yet it decides whether `{FALSE, TRUE}` as an I8 is 2 or -2. Getting the same
+numbers in Python means reproducing those rules exactly.
+
+## Quick start
 
 ```python
-from lvbitpack import bools_to_number, number_to_bools, U8, I8, SignExtension
+from lvbitpack import I8, U8, U16, SignExtension, bools_to_number, number_to_bools
 
-# Element 0 is the LSB, so {FALSE, TRUE} is the number 2.
+# Element 0 is the least significant bit.
 assert bools_to_number([False, True], U8) == 2
 
-# Elements beyond the width are dropped.
-assert bools_to_number([True] * 9, U8) == 255
-
-# A signed type uses two's complement. Under LabVIEW's default sign-extension
-# mode a short signed array pads with its last element, so {FALSE, TRUE} is -2.
+# LabVIEW's default mode pads a signed output with the last element: {F, T} as I8 is -2.
 assert bools_to_number([False, True], I8) == -2
 assert bools_to_number([False, True, False, True], I8, sign_extension=SignExtension.NEVER) == 10
 assert bools_to_number([False, True, False, True], I8, sign_extension=SignExtension.ALWAYS) == -6
 
-# The inverse: element 0 holds the LSB of the two's complement form.
-assert number_to_bools(2, U8) == [False, True, False, False, False, False, False, False]
+# Elements beyond the width are dropped.
+assert bools_to_number([True] * 9, U8) == 255
+
+# The inverse returns one element per bit of the type.
 assert number_to_bools(-2, I8) == [False, True, True, True, True, True, True, True]
+assert len(number_to_bools(1, U16)) == 16
 ```
 
-### Sign-extension modes
-
-When the array is shorter than the integer width, the padding bit is chosen by the
-mode, matching LabVIEW's right-click "Sign Extension Mode":
-
-- `SignExtension.NEVER`: padding is always FALSE (zero padding).
-- `SignExtension.IF_SIGNED` (default): unsigned types pad with FALSE, signed types
-  pad with the array's last element.
-- `SignExtension.ALWAYS`: padding is always the array's last element.
-
-### Types and bytes
-
-`U8`, `U16`, `U32`, `U64`, `I8`, `I16`, `I32`, `I64` are ready-made `IntType`
-values; build others with `IntType(bits, signed)` or `IntType.parse("u16")`.
-
-The array bit order is fixed and independent of byte endianness. Byte order only
-decides how the resulting number is laid out in memory:
+Bytes, LabVIEW's flattened array and dense bit packing:
 
 ```python
-from lvbitpack import bools_to_bytes, bytes_to_bools, U16
+from lvbitpack import U16, bools_to_bytes, pack_bools, pack_flattened, unpack_flattened
 
-assert bools_to_bytes([False, True], U16, byteorder="big") == b"\x00\x02"
+# The number's bytes, big-endian by default like LabVIEW's Flatten To String.
+assert bools_to_bytes([False, True], U16) == b"\x00\x02"
 assert bools_to_bytes([False, True], U16, byteorder="little") == b"\x02\x00"
-assert bytes_to_bools(b"\x02\x00", U16, byteorder="little") == number_to_bools(2, U16)
+
+# Flatten To String of a Boolean array: an I32 count, then one byte per element.
+assert pack_flattened([True, False, True, True]).hex() == "0000000401000101"
+assert unpack_flattened(bytes.fromhex("0000000401000101")) == [True, False, True, True]
+
+# Eight elements per byte, first element in the high bit (or the low bit with "lsb").
+assert pack_bools([True, True, False, True]) == b"\xd0"
+assert pack_bools([True, True, False, True], bit_order="lsb") == b"\x0b"
 ```
+
+Anything refused (a value out of range, a string where a Boolean array belongs, a truncated
+flattened array) raises `lvbitpack.BitpackError`, a `ValueError`.
 
 ## Command line
 
 ```
-lvbitpack pack 01 --type u8                 # element 0 is the LSB, prints 2
-lvbitpack pack 0101 --type i8 -s always     # prints -6
-lvbitpack unpack 2 --type u8                # prints 01000000
-lvbitpack unpack -2 --type i8               # prints 01111111
-lvbitpack --version
+$ lvbitpack pack 01 --type i8
+-2
+$ lvbitpack pack 0101 --type i8 --sign-extension never
+10
+$ lvbitpack unpack -2 --type i8
+01111111
+$ lvbitpack flatten 1011
+0000000401000101
 ```
 
-Bit strings read element 0 first. Errors go to stderr with exit code 1.
+Bit strings list element 0 first. `python -m lvbitpack` works too.
 
-## Raw bit packing
+## Why this library
 
-The original helpers pack booleans as bits without any number interpretation,
-MSB-first within each byte, and add the LabVIEW count header on request.
+- It follows LabVIEW's own rules: the three Sign Extension Mode settings, truncation of long
+  arrays, the 8, 16, 32 and 64-bit signed and unsigned outputs, and the flattened Boolean
+  array layout, checked against NI's documentation and against output of LabVIEW 2026.
+- NumPy's `packbits` packs 0/1 arrays into `uint8` bytes (high or low bit first) but has no
+  notion of LabVIEW's integer widths or sign extension, and needs NumPy. `bitarray` (a C
+  extension) and `bitstring` (which depends on `tibs`) are general bit containers; neither
+  reproduces Boolean Array To Number. lvbitpack is small, pure Python and dependency free.
 
-```python
-from lvbitpack import pack_bools, unpack_bools, pack_flattened, unpack_flattened
-
-# Raw packed bits, MSB-first, no header. The first boolean fills 0x80.
-packed = pack_bools([True, True, False, True])
-assert packed == b"\xd0"
-assert unpack_bools(packed, 4) == [True, True, False, True]
-
-# A four-byte big-endian element count followed by the packed bits.
-blob = pack_flattened([True] * 9)
-assert blob == b"\x00\x00\x00\x09\xff\x80"
-assert unpack_flattened(blob) == [True] * 9
-```
-
-## How the three formats differ
-
-These are three distinct wire formats. Pick by what you are reading or writing:
-
-- **Boolean Array To Number** (`bools_to_number`): the array's bits become one
-  fixed-width integer, element 0 the LSB. No header, no per-element bytes.
-- **Raw bit packing** (`pack_bools`): one bit per boolean, MSB-first, padded to a
-  byte boundary, with no header and no number interpretation.
-- **Flattened boolean array**: LabVIEW's Flatten To String of a boolean *array*
-  writes a 32-bit big-endian element count and then **one byte per element**
-  (0x00 or 0x01), not bit-packed. `pack_flattened` here instead writes the count
-  followed by the compact bit-packed form, so it is a compact variant and not the
-  byte-per-element layout a LabVIEW Unflatten of a boolean array expects. Use it
-  only when both ends agree on this compact form.
+What it does not cover: Boolean Array To Number with a fixed-point output (see the guide).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/JaviLianes8/lvbitpack/blob/main/LICENSE).
 
 ## Links
 

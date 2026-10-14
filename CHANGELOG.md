@@ -6,6 +6,43 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-14
+
+First stable release, and the first one published on PyPI. The public API is the 21 names
+in `lvbitpack.__all__`; their names, signatures, defaults and error type are now stable.
+
+### Changed (from 0.2.0)
+
+- `pack_flattened` and `unpack_flattened` now read and write LabVIEW's real flattened
+  Boolean array: a big-endian I32 count, then one byte per element (0x01 / 0x00). In 0.2.0
+  they wrote the count followed by bit-packed bytes, which LabVIEW cannot unflatten.
+  `unpack_flattened` reads any nonzero byte as TRUE and refuses a negative count, missing
+  elements and bytes left over after the last element.
+- The byte functions (`number_to_bytes`, `bytes_to_number`, `bools_to_bytes`,
+  `bytes_to_bools`) default to big-endian, LabVIEW's flattened order; 0.2.0 defaulted to
+  little-endian.
+- Every refusal raises the new `BitpackError` (a `ValueError`). In 0.2.0 some bad input
+  leaked `TypeError` or `AttributeError` from inside, and some was silently accepted.
+- Boolean arrays are checked: a `str` or bytes object is refused (0.2.0 read each
+  character's truthiness, so `"0101"` gave 15), and elements must be booleans or 0/1.
+- Arrays may be any finite iterable, NumPy arrays included; 0.2.0 needed indexing.
+- `IntType` refuses a non-`int` or `bool` width and a non-`bool` `signed`; 0.2.0 accepted
+  `IntType(8.0, "yes")`. `IntType.parse` accepts only the eight names (with `u`, `uint`, `i`,
+  `int` prefixes); 0.2.0 accepted forms such as `"u08"`.
+- Numbers are checked: `bool` and non-integers are refused, `__index__` integers (NumPy)
+  accepted, and messages never print a huge integer (0.2.0 failed inside its own message
+  for integers beyond Python's 4300-digit printing limit).
+- The command line prefixes errors with `lvbitpack: error:`, bounds every message, exits 1
+  quietly when its output pipe closes, and runs as `python -m lvbitpack`.
+
+### Added
+
+- `BitpackError`.
+- `bit_order="msb" | "lsb"` on `pack_bools` and `unpack_bools`; `unpack_bools`'s `count` is
+  now optional (every bit by default).
+- `flatten` and `unflatten` commands.
+- `GUIDE.md` with executed examples.
+
 ## [0.2.0]
 
 - `bools_to_number` and `number_to_bools`: LabVIEW Boolean Array To Number and
@@ -14,16 +51,12 @@ All notable changes to this project are documented here. The format follows
   documented sign-extension modes for short arrays.
 - `SignExtension` enum and the typed `IntType` value object with the `U8` to `I64`
   presets, bounds, mask, and a `parse` helper.
-- `number_to_bytes`, `bytes_to_number`, `bools_to_bytes`, and `bytes_to_bools`:
-  little or big endian serialization, with the array bit order independent of byte
-  order.
-- `lvbitpack` command line interface: `pack` (bits to number) and `unpack` (number
-  to bits) with `--type`, `--sign-extension`, `--base`, and `--version`.
+- `number_to_bytes`, `bytes_to_number`, `bools_to_bytes`, and `bytes_to_bools`.
+- `lvbitpack` command line interface: `pack` and `unpack`.
 
 ## [0.1.0]
 
-- First release.
 - `pack_bools` and `unpack_bools`: MSB-first bit packing with zero padding of the
   final byte and count-aware unpacking.
-- `pack_flattened` and `unpack_flattened`: the LabVIEW Flatten To String form, a
-  four-byte big-endian element count followed by the packed bits.
+- `pack_flattened` and `unpack_flattened`: a four-byte big-endian element count
+  followed by the packed bits.

@@ -3,6 +3,9 @@
 >>> import lvbitpack
 >>> lvbitpack.bools_to_number([False, True], lvbitpack.I8)
 -2
+>>> from lvbitpack import I8, I16, I32, I64, U8, U16, U32, U64
+>>> [t.name for t in (U8, U16, U32, U64, I8, I16, I32, I64)]
+['u8', 'u16', 'u32', 'u64', 'i8', 'i16', 'i32', 'i64']
 """
 
 from ._bytes import bools_to_bytes, bytes_to_bools, bytes_to_number, number_to_bytes
