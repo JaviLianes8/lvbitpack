@@ -46,10 +46,12 @@ class IntType:
     >>> from lvbitpack import IntType, U16
     >>> IntType(16, False) == U16
     True
-    >>> IntType(12, False)
-    Traceback (most recent call last):
-    ...
-    lvbitpack.BitpackError: bits must be 8, 16, 32 or 64, not 12
+    >>> from lvbitpack import BitpackError
+    >>> try:
+    ...     IntType(12, False)
+    ... except BitpackError as error:
+    ...     print(error)
+    bits must be 8, 16, 32 or 64, not 12
     """
 
     bits: int

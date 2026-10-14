@@ -48,9 +48,9 @@ def test_seeded_round_trips() -> None:
         (b"\x00\x00\x00", "4-byte count; got 3 bytes"),
         (b"\xff\xff\xff\xff", r"count is negative \(-1\)"),
         (b"\x80\x00\x00\x00", r"negative \(-2147483648\)"),
-        (b"\x00\x00\x00\x02\x01", "says 2 elements but only 1 bytes follow"),
-        (b"\x7f\xff\xff\xff", "says 2147483647 elements but only 0"),
-        (b"\x00\x00\x00\x01\x01\x00", "1 bytes follow the last of the 1 elements"),
+        (b"\x00\x00\x00\x02\x01", "says 2 elements but only 1 byte follows"),
+        (b"\x7f\xff\xff\xff", "says 2147483647 elements but only 0 bytes follow"),
+        (b"\x00\x00\x00\x01\x01\x00", "1 byte follows the last of the 1 elements"),
     ],
 )
 def test_malformed_input_is_refused(data: bytes, message: str) -> None:

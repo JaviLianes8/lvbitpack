@@ -33,8 +33,9 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
   width is accepted and stored as `int`. `IntType.contains` answers False for `bool` and
   floats (0.2.0 said True for `contains(1.0)` and `contains(True)`) and True for in-range
   `__index__` integers such as NumPy's.
-- Byte arguments accept any buffer-protocol object, as 0.2.0 did, but refuse lists of
-  integers and text, which 0.2.0 read as bytes.
+- Byte arguments accept any buffer-protocol object and read its raw bytes, so a buffer
+  of wide items (an `array.array("H")`, a NumPy `uint16` array) is measured in bytes; 0.2.0
+  measured it in items. Lists of integers, which 0.2.0 read as bytes, are refused.
 - `SignExtension("...")` with an unknown name raises `BitpackError` (still a `ValueError`).
 - Numbers are checked: `bool` and non-integers are refused, `__index__` integers (NumPy)
   accepted, and messages never print a huge integer (0.2.0 failed inside its own message
@@ -43,7 +44,8 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
   quietly when its output pipe closes, and runs as `python -m lvbitpack`. An unknown
   `--type` is a usage error (exit 2, was 1). Bit strings also ignore `_`; `unpack` refuses
   numbers longer than 100 characters.
-- Public functions and classes report `lvbitpack` as their module in `help()` and reprs.
+- Public functions report `lvbitpack` as their module in `help()`; the classes keep the
+  module they are defined in, so source lookup and pickles find them.
 
 ### Added
 

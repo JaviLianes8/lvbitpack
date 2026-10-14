@@ -15,6 +15,10 @@ _HEADER = 4
 _MAX_COUNT = 0x7FFFFFFF
 
 
+def _follow(count: int) -> str:
+    return "1 byte follows" if count == 1 else f"{count} bytes follow"
+
+
 def pack_flattened(values: Iterable[bool | int]) -> bytes:
     """Flatten a 1-D Boolean array the way LabVIEW's Flatten To String does.
 
@@ -46,7 +50,7 @@ def unpack_flattened(data: Buffer) -> list[bool]:
         raise BitpackError(f"the element count is negative ({count})")
     body = len(raw) - _HEADER
     if body < count:
-        raise BitpackError(f"the count says {count} elements but only {body} bytes follow")
+        raise BitpackError(f"the count says {count} elements but only {_follow(body)}")
     if body > count:
-        raise BitpackError(f"{body - count} bytes follow the last of the {count} elements")
+        raise BitpackError(f"{_follow(body - count)} the last of the {count} elements")
     return [byte != 0 for byte in raw[_HEADER:]]

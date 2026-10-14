@@ -75,9 +75,11 @@ def test_version_and_type_information() -> None:
     assert importlib.resources.files("lvbitpack").joinpath("py.typed").is_file()
 
 
-def test_public_classes_present_themselves_under_the_package() -> None:
+def test_public_classes_keep_their_real_module_for_source_lookup() -> None:
     for cls in (BitpackError, IntType, SignExtension):
-        assert cls.__module__ == "lvbitpack"
+        assert cls.__module__.startswith("lvbitpack._")  # its real module, for getsource
+        source = inspect.getsource(cls).splitlines()
+        assert any(line.startswith(f"class {cls.__name__}") for line in source[:2])
 
 
 def test_signatures_are_the_stable_ones() -> None:

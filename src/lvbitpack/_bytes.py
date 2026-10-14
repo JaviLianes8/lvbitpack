@@ -46,7 +46,8 @@ def number_to_bytes(number: int, int_type: IntType, *, byteorder: ByteOrder = "b
 def bytes_to_number(data: Buffer, int_type: IntType, *, byteorder: ByteOrder = "big") -> int:
     """Read a number from exactly ``int_type.bits // 8`` bytes.
 
-    ``data`` is ``bytes``, ``bytearray`` or ``memoryview`` (read as its raw bytes).
+    ``data`` is any buffer-protocol object (``bytes``, ``bytearray``, ``memoryview``,
+    ``array.array``, NumPy arrays), read as its raw bytes in memory order.
 
     >>> from lvbitpack import I16, U16, bytes_to_number
     >>> bytes_to_number(b"\\xff\\xfe", I16), bytes_to_number(b"\\xff\\xfe", U16)

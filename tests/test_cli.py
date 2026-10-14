@@ -69,7 +69,7 @@ def test_commands(capsys: pytest.CaptureFixture[str], args: list[str], expected:
         (["unpack", "1.5", "--type", "u8"], "not an integer: '1.5'"),
         (["unpack", "9" * 101, "--type", "u64"], "101 characters"),
         (["unflatten", "zz"], "not valid hex: 'zz'"),
-        (["unflatten", "00000002 01"], "says 2 elements but only 1"),
+        (["unflatten", "00000002 01"], "says 2 elements but only 1 byte follows"),
         (["unflatten", "ffffffff"], "count is negative"),
     ],
 )

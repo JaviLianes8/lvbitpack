@@ -52,10 +52,12 @@ would have coerced it to the wire's type before the node ever saw it.
 [False, True, True, True, True, True, True, True]
 >>> len(number_to_bools(5, U64))
 64
->>> number_to_bools(128, I8)
-Traceback (most recent call last):
-...
-lvbitpack.BitpackError: 128 is out of range for i8 [-128, 127]
+>>> from lvbitpack import BitpackError
+>>> try:
+...     number_to_bools(128, I8)
+... except BitpackError as error:
+...     print(error)
+128 is out of range for i8 [-128, 127]
 
 ```
 
@@ -159,7 +161,7 @@ input is never echoed, and they are plain ASCII. An exception raised by your own
 | element that is not a Boolean | `element <i> must be a boolean` |
 | text or bytes as the array | `values must be an iterable of booleans` |
 | wrong byte count for a number | `<type> needs exactly <n> bytes` |
-| flattened array too short, negative count, extra bytes | `a flattened array starts`, `the element count is negative`, `the count says`, `<n> bytes follow` |
+| flattened array too short, negative count, extra bytes | `a flattened array starts`, `the element count is negative`, `the count says`, `<n> byte(s) follow(s)` |
 | bad `byteorder`, `bit_order`, `sign_extension`, `int_type` | the parameter's name |
 
 ## Command line

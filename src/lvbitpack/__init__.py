@@ -17,11 +17,9 @@ from ._types import I8, I16, I32, I64, U8, U16, U32, U64, IntType, SignExtension
 
 __version__ = "1.0.0"
 
-# Shown as lvbitpack.<name> in tracebacks, help() and reprs, not as a private module.
+# Functions show lvbitpack as their module in help(); classes keep their real module so
+# that inspect.getsource and pickles find them where they are defined.
 for _public in (
-    BitpackError,
-    IntType,
-    SignExtension,
     bools_to_bytes,
     bools_to_number,
     bytes_to_bools,
