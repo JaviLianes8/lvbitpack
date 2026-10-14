@@ -45,7 +45,10 @@ def write(stream_name: str, text: str) -> bool:
     """Write ``text`` to stdout or stderr; return False when the reader went away."""
     stream = sys.stdout if stream_name == "stdout" else sys.stderr
     try:
-        stream.write(text)
+        try:
+            stream.write(text)
+        except UnicodeEncodeError:  # a stream that cannot encode the text is still there
+            stream.write(text.encode("ascii", "backslashreplace").decode("ascii"))
         stream.flush()
     except (AttributeError, OSError, ValueError):
         silence(stream)

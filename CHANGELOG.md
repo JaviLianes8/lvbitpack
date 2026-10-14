@@ -25,15 +25,25 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
   leaked `TypeError` or `AttributeError` from inside, and some was silently accepted.
 - Boolean arrays are checked: a `str` or bytes object is refused (0.2.0 read each
   character's truthiness, so `"0101"` gave 15), and elements must be booleans or 0/1.
-- Arrays may be any finite iterable, NumPy arrays included; 0.2.0 needed indexing.
+- Arrays may be any finite iterable; 0.2.0 needed indexing, so generators failed, and
+  `bools_to_number` refused NumPy arrays ("truth value of an array is ambiguous").
 - `IntType` refuses a non-`int` or `bool` width and a non-`bool` `signed`; 0.2.0 accepted
   `IntType(8.0, "yes")`. `IntType.parse` accepts only the eight names (with `u`, `uint`, `i`,
-  `int` prefixes); 0.2.0 accepted forms such as `"u08"`.
+  `int` prefixes); 0.2.0 accepted forms such as `"u08"`. A NumPy or other `__index__`
+  width is accepted and stored as `int`. `IntType.contains` answers False for `bool` and
+  floats (0.2.0 said True for `contains(1.0)` and `contains(True)`) and True for in-range
+  `__index__` integers such as NumPy's.
+- Byte arguments accept any buffer-protocol object, as 0.2.0 did, but refuse lists of
+  integers and text, which 0.2.0 read as bytes.
+- `SignExtension("...")` with an unknown name raises `BitpackError` (still a `ValueError`).
 - Numbers are checked: `bool` and non-integers are refused, `__index__` integers (NumPy)
   accepted, and messages never print a huge integer (0.2.0 failed inside its own message
   for integers beyond Python's 4300-digit printing limit).
 - The command line prefixes errors with `lvbitpack: error:`, bounds every message, exits 1
-  quietly when its output pipe closes, and runs as `python -m lvbitpack`.
+  quietly when its output pipe closes, and runs as `python -m lvbitpack`. An unknown
+  `--type` is a usage error (exit 2, was 1). Bit strings also ignore `_`; `unpack` refuses
+  numbers longer than 100 characters.
+- Public functions and classes report `lvbitpack` as their module in `help()` and reprs.
 
 ### Added
 

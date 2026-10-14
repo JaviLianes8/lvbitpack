@@ -17,8 +17,22 @@ from ._types import I8, I16, I32, I64, U8, U16, U32, U64, IntType, SignExtension
 
 __version__ = "1.0.0"
 
-# Shown as lvbitpack.<Name> in tracebacks, help() and reprs, not as a private module.
-for _public in (BitpackError, IntType, SignExtension):
+# Shown as lvbitpack.<name> in tracebacks, help() and reprs, not as a private module.
+for _public in (
+    BitpackError,
+    IntType,
+    SignExtension,
+    bools_to_bytes,
+    bools_to_number,
+    bytes_to_bools,
+    bytes_to_number,
+    number_to_bools,
+    number_to_bytes,
+    pack_bools,
+    pack_flattened,
+    unpack_bools,
+    unpack_flattened,
+):
     _public.__module__ = __name__
 del _public
 

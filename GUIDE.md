@@ -130,16 +130,28 @@ LabVIEW itself never packs Booleans this way; this is for protocols and files th
 
 Any finite iterable (a list, a tuple, a generator, a NumPy array) whose elements are `True`
 or `False`, the integers 0 or 1 (or objects with `__index__` giving 0 or 1), or NumPy
-booleans. A `str`, `bytes`, `bytearray` or `memoryview` is refused, because `"0101"` is not
-an array of four Booleans. Integer arguments accept any `__index__` integer except `bool`.
-Byte arguments accept `bytes`, `bytearray` or `memoryview` (read as raw bytes).
+booleans; the type hints say `Iterable[bool | int]`. A `str`, `bytes`, `bytearray` or
+`memoryview` is refused, because `"0101"` is not an array of four Booleans. Integer
+arguments (numbers, counts, `IntType` widths) accept any `__index__` integer except `bool`;
+`IntType.contains` answers False for anything else. Byte arguments accept any object with
+the buffer protocol (`bytes`, `bytearray`, `memoryview`, `array.array`, NumPy arrays), read
+as its raw bytes in memory order; text and lists are refused.
+
+```pycon
+>>> import array
+>>> from lvbitpack import U16, bytes_to_number
+>>> bytes_to_number(array.array("B", [1, 0]), U16)
+256
+
+```
 
 ## Errors
 
 Every refusal raises `BitpackError`, a subclass of `ValueError`. Messages quote at most 40
 characters of a bad value and describe integers wider than 128 bits by their size, so huge
-input is never echoed. An exception raised by your own object's `__index__` (other than
-`TypeError`) passes through unchanged.
+input is never echoed, and they are plain ASCII. An exception raised by your own object's
+`__index__`, `__iter__` or iterator (other than `TypeError`) passes through unchanged.
+`SignExtension("sometimes")` raises `BitpackError` too.
 
 | Situation | Message starts with |
 | --- | --- |
@@ -171,7 +183,9 @@ $ lvbitpack unflatten 0000000401000101
 
 Bit strings list element 0 first; `1`, `t`, `T` are TRUE, `0`, `f`, `F` FALSE, and spaces,
 commas and underscores are ignored. `unpack` reads decimal or `0x`, `0o`, `0b` prefixed
-numbers. Data errors print `lvbitpack: error: ...` to stderr and exit 1; usage errors exit 2.
+numbers; put `--` before a negative prefixed number (`lvbitpack unpack --type i8 -- -0x80`).
+Data errors print `lvbitpack: error: ...` to stderr and exit 1; usage errors, an unknown
+`--type` included, exit 2.
 
 ## Scope
 

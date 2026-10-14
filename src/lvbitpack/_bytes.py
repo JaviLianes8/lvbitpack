@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
-from ._errors import BitpackError, Buffer, as_buffer, as_int, quote
+from ._errors import BitpackError, Buffer, as_buffer, as_int, plain_str, quote
 from ._number import bools_to_number, number_to_bools
 from ._types import IntType, SignExtension, check_type
 
@@ -18,9 +18,10 @@ ByteOrder = Literal["big", "little"]
 
 
 def _check_order(byteorder: object) -> Literal["big", "little"]:
-    if byteorder == "big" and isinstance(byteorder, str):
+    text = plain_str(byteorder)
+    if text == "big":
         return "big"
-    if byteorder == "little" and isinstance(byteorder, str):
+    if text == "little":
         return "little"
     raise BitpackError(f"byteorder must be 'big' or 'little', not {quote(byteorder)}")
 
@@ -61,7 +62,7 @@ def bytes_to_number(data: Buffer, int_type: IntType, *, byteorder: ByteOrder = "
 
 
 def bools_to_bytes(
-    values: Iterable[bool],
+    values: Iterable[bool | int],
     int_type: IntType,
     *,
     sign_extension: SignExtension = SignExtension.IF_SIGNED,

@@ -15,7 +15,7 @@ _HEADER = 4
 _MAX_COUNT = 0x7FFFFFFF
 
 
-def pack_flattened(values: Iterable[bool]) -> bytes:
+def pack_flattened(values: Iterable[bool | int]) -> bytes:
     """Flatten a 1-D Boolean array the way LabVIEW's Flatten To String does.
 
     >>> from lvbitpack import pack_flattened

@@ -63,6 +63,13 @@ def _hex(text: str) -> bytes:
         raise BitpackError(f"not valid hex: {quote(text)}") from None
 
 
+def _int_type(text: str) -> IntType:
+    try:
+        return IntType.parse(text)
+    except BitpackError as error:
+        raise argparse.ArgumentTypeError(str(error)) from None
+
+
 def _show(bits: list[bool]) -> str:
     return "".join("1" if bit else "0" for bit in bits)
 
@@ -80,7 +87,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     pack = sub.add_parser("pack", help="Boolean array to number")
     pack.add_argument("bits", help="bit string, element 0 (the LSB) first, e.g. 01 or 0,1")
-    pack.add_argument("--type", "-t", required=True, help=f"integer type: {types}")
+    pack.add_argument("--type", "-t", required=True, type=_int_type, help=f"integer type: {types}")
     pack.add_argument(
         "--sign-extension",
         "-s",
@@ -92,7 +99,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     unpack = sub.add_parser("unpack", help="number to Boolean array")
     unpack.add_argument("number", help="integer: decimal, or 0x/0o/0b prefixed")
-    unpack.add_argument("--type", "-t", required=True, help=f"integer type: {types}")
+    unpack.add_argument(
+        "--type", "-t", required=True, type=_int_type, help=f"integer type: {types}"
+    )
 
     flatten = sub.add_parser("flatten", help="Boolean array to LabVIEW flattened bytes (hex)")
     flatten.add_argument("bits", help="bit string, element 0 first")
@@ -103,12 +112,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _run(args: argparse.Namespace) -> str:
     if args.command == "pack":
-        int_type = IntType.parse(args.type)
+        int_type = args.type
         mode = SignExtension(args.sign_extension)
         number = bools_to_number(_bits(args.bits), int_type, sign_extension=mode)
         return f"0x{number & int_type.mask:x}" if args.base == "hex" else str(number)
     if args.command == "unpack":
-        int_type = IntType.parse(args.type)
+        int_type = args.type
         return _show(number_to_bools(_number(args.number), int_type))
     if args.command == "flatten":
         return pack_flattened(_bits(args.bits)).hex()

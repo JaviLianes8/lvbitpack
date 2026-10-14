@@ -3,13 +3,22 @@
 from __future__ import annotations
 
 import operator
+import reprlib
 from collections.abc import Iterable
+from typing import Protocol
 
 # Values quoted in messages are cut to this many characters, so huge input is never echoed.
 _QUOTE_LIMIT = 40
 _NUMPY_BOOL_NAMES = frozenset({"bool", "bool_"})
+_REPR = reprlib.Repr()
+_REPR.maxstring = _REPR.maxother = _QUOTE_LIMIT + 10
+_REPR.maxlist = _REPR.maxtuple = _REPR.maxdict = _REPR.maxset = 4
 
-Buffer = bytes | bytearray | memoryview
+
+class Buffer(Protocol):
+    """Any object with the buffer protocol: bytes, bytearray, memoryview, array, NumPy."""
+
+    def __buffer__(self, flags: int, /) -> memoryview: ...
 
 
 class BitpackError(ValueError):
@@ -27,21 +36,34 @@ class BitpackError(ValueError):
 
 
 def quote(value: object) -> str:
-    """A short, safe description of ``value`` for an error message."""
-    if isinstance(value, int) and not isinstance(value, bool):
-        if value.bit_length() > 128:
-            return f"an integer of {value.bit_length()} bits"
-        return str(int(value))
+    """A short, safe, ASCII description of ``value`` for an error message."""
     try:
-        text = repr(value)
-    except Exception:  # a hostile __repr__ must not replace our error with its own
-        text = f"<{type(value).__name__[:_QUOTE_LIMIT]} object>"
+        if isinstance(value, int) and not isinstance(value, bool):
+            size = int.bit_length(value)  # the int method: a subclass cannot override it
+            if size > 128:
+                return f"an integer of {size} bits"
+            return int.__repr__(value)
+        text = _REPR.repr(value)
+    except Exception:  # a hostile object must not replace our error with its own
+        return f"<{type_name(value)} object>"
+    text = text.encode("ascii", "backslashreplace").decode("ascii")
     return text if len(text) <= _QUOTE_LIMIT else text[:_QUOTE_LIMIT] + "..."
 
 
 def type_name(value: object) -> str:
     """The type name of ``value``, cut for messages."""
-    return type(value).__name__[:_QUOTE_LIMIT]
+    name = type(value).__name__.encode("ascii", "backslashreplace").decode("ascii")
+    return name[:_QUOTE_LIMIT]
+
+
+def plain_str(value: object) -> str | None:
+    """``value`` as an exact ``str`` without calling a subclass's methods, else None."""
+    return str.__str__(value) if isinstance(value, str) else None
+
+
+def is_integer(value: object) -> bool:
+    """Whether ``value`` is an ``__index__`` integer other than ``bool``."""
+    return not isinstance(value, bool) and hasattr(type(value), "__index__")
 
 
 def as_int(value: object, what: str) -> int:
@@ -59,7 +81,12 @@ def as_bool(value: object, index: int) -> bool:
     if isinstance(value, bool):
         return value
     kind = type(value)
-    if kind.__name__ in _NUMPY_BOOL_NAMES and kind.__module__.startswith("numpy"):
+    module = getattr(kind, "__module__", None)
+    if (
+        kind.__name__ in _NUMPY_BOOL_NAMES
+        and isinstance(module, str)
+        and module.startswith("numpy")
+    ):
         return bool(value)
     try:
         number = int(operator.index(value))  # type: ignore[arg-type]
@@ -87,9 +114,13 @@ def as_bools(values: Iterable[object]) -> list[bool]:
 
 
 def as_buffer(data: object, what: str = "data") -> bytes:
-    """``bytes``, ``bytearray`` or ``memoryview`` as ``bytes``; anything else is refused."""
-    if isinstance(data, (bytes, bytearray)):
-        return bytes(data)
-    if isinstance(data, memoryview):
-        return data.tobytes()  # raw bytes whatever the item format
-    raise BitpackError(f"{what} must be bytes, bytearray or memoryview, not {type_name(data)}")
+    """The raw bytes of any buffer-protocol object; text and everything else is refused."""
+    if not isinstance(data, str):
+        try:
+            with memoryview(data) as view:  # type: ignore[arg-type]
+                return view.tobytes()  # raw bytes in memory order, any item format
+        except TypeError:
+            pass
+        except ValueError:  # a memoryview that was already released
+            raise BitpackError(f"{what} is a released memoryview") from None
+    raise BitpackError(f"{what} must be a bytes-like object, not {type_name(data)}")

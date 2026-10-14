@@ -5,7 +5,7 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass
 
-from ._errors import BitpackError, quote, type_name
+from ._errors import BitpackError, as_int, is_integer, plain_str, quote, type_name
 
 _VALID_BITS = (8, 16, 32, 64)
 _PREFIXES = (("uint", False), ("int", True), ("u", False), ("i", True))
@@ -32,6 +32,10 @@ class SignExtension(enum.Enum):
     IF_SIGNED = "if_signed"
     ALWAYS = "always"
 
+    @classmethod
+    def _missing_(cls, value: object) -> SignExtension:
+        raise BitpackError(f"no sign extension mode {quote(value)}; use never, if_signed or always")
+
 
 @dataclass(frozen=True)
 class IntType:
@@ -52,10 +56,10 @@ class IntType:
     signed: bool
 
     def __post_init__(self) -> None:
-        if isinstance(self.bits, bool) or type(self.bits) is not int:
-            raise BitpackError(f"bits must be an int, not {type_name(self.bits)}")
-        if self.bits not in _VALID_BITS:
-            raise BitpackError(f"bits must be 8, 16, 32 or 64, not {quote(self.bits)}")
+        bits = as_int(self.bits, "bits")
+        if bits not in _VALID_BITS:
+            raise BitpackError(f"bits must be 8, 16, 32 or 64, not {quote(bits)}")
+        object.__setattr__(self, "bits", bits)  # a NumPy or other __index__ width is stored as int
         if not isinstance(self.signed, bool):
             raise BitpackError(f"signed must be a bool, not {type_name(self.signed)}")
 
@@ -102,13 +106,15 @@ class IntType:
     def contains(self, number: int) -> bool:
         """Whether ``number`` is an integer within the type's range.
 
+        Any ``__index__`` integer counts; ``bool``, floats and other types are never contained.
+
         >>> from lvbitpack import I8
-        >>> I8.contains(-128), I8.contains(128), I8.contains(1.0)
-        (True, False, False)
+        >>> I8.contains(-128), I8.contains(128), I8.contains(1.0), I8.contains(True)
+        (True, False, False, False)
         """
-        if isinstance(number, bool) or not isinstance(number, int):
+        if not is_integer(number):
             return False
-        return self.min <= number <= self.max
+        return self.min <= as_int(number, "number") <= self.max
 
     @classmethod
     def parse(cls, text: str) -> IntType:
@@ -120,9 +126,10 @@ class IntType:
         >>> IntType.parse("I16"), IntType.parse(" uint8 ")
         (IntType(bits=16, signed=True), IntType(bits=8, signed=False))
         """
-        if not isinstance(text, str):
+        plain = plain_str(text)
+        if plain is None:
             raise BitpackError(f"an integer type name must be str, not {type_name(text)}")
-        key = text.strip().lower()
+        key = plain.strip().lower()
         for prefix, signed in _PREFIXES:
             digits = key[len(prefix) :]
             if key.startswith(prefix) and digits in ("8", "16", "32", "64"):

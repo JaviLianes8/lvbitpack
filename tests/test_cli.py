@@ -65,7 +65,6 @@ def test_commands(capsys: pytest.CaptureFixture[str], args: list[str], expected:
     ("args", "message"),
     [
         (["pack", "012", "--type", "u8"], "character 2 is '2'"),
-        (["pack", "01", "--type", "f64"], "unknown integer type 'f64'"),
         (["unpack", "256", "--type", "u8"], "256 is out of range for u8 [0, 255]"),
         (["unpack", "1.5", "--type", "u8"], "not an integer: '1.5'"),
         (["unpack", "9" * 101, "--type", "u64"], "101 characters"),
@@ -91,6 +90,8 @@ def test_data_errors_go_to_stderr_with_exit_one(
         ["pack", "01", "--type", "u8", "-s", "sometimes"],
         ["pack", "01", "--type", "u8", "--base", "oct"],
         ["unflatten"],
+        ["pack", "01", "--type", "f64"],
+        ["unpack", "1", "--type", "u12"],
     ],
 )
 def test_usage_errors_exit_two(capsys: pytest.CaptureFixture[str], args: list[str]) -> None:

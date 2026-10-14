@@ -76,9 +76,9 @@ def test_elements_must_be_booleans(function: Callable[[object], object], element
 
 
 def test_zero_one_integers_and_index_objects_are_booleans() -> None:
-    assert bools_to_number([0, 1], U8) == 2  # type: ignore[list-item]
+    assert bools_to_number([0, 1], U8) == 2
     assert bools_to_number([Index(0), Index(1)], U8) == 2  # type: ignore[list-item]
-    assert pack_flattened([1, 0]) == b"\x00\x00\x00\x02\x01\x00"  # type: ignore[list-item]
+    assert pack_flattened([1, 0]) == b"\x00\x00\x00\x02\x01\x00"
 
 
 def test_any_finite_iterable_is_accepted() -> None:
@@ -101,7 +101,7 @@ def test_numpy_booleans_and_integers_are_accepted() -> None:
 @pytest.mark.parametrize("function", BUFFER_FUNCTIONS)
 @pytest.mark.parametrize("data", ["00", [0], None, 0])
 def test_buffers_must_be_bytes_like(function: Callable[[object], object], data: object) -> None:
-    with pytest.raises(BitpackError, match="must be bytes, bytearray or memoryview"):
+    with pytest.raises(BitpackError, match="must be a bytes-like object"):
         function(data)
 
 
@@ -136,8 +136,8 @@ def test_sign_extension_must_be_the_enum(mode: object) -> None:
     ("bits", "signed", "message"),
     [
         (12, False, "8, 16, 32 or 64, not 12"),
-        (8.0, False, "bits must be an int, not float"),
-        (True, False, "bits must be an int, not bool"),
+        (8.0, False, "bits must be an integer, not float"),
+        (True, False, "bits must be an integer, not bool"),
         (8, 1, "signed must be a bool, not int"),
         (8, None, "signed must be a bool"),
     ],
@@ -175,7 +175,7 @@ def test_messages_never_echo_huge_input() -> None:
 def test_a_broken_repr_does_not_replace_the_error() -> None:
     with pytest.raises(
         BitpackError,
-        match=r"element 0 must be a boolean \(True/False or 0/1\), not <Hostile object>",
+        match=r"element 0 must be a boolean \(True/False or 0/1\), not <Hostile (object|instance)",
     ):
         bools_to_number([Hostile()], U8)  # type: ignore[list-item]
 

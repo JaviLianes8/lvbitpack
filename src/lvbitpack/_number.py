@@ -28,7 +28,7 @@ def _pad_bit(bits: list[bool], int_type: IntType, mode: SignExtension) -> int:
 
 
 def bools_to_number(
-    values: Iterable[bool],
+    values: Iterable[bool | int],
     int_type: IntType,
     *,
     sign_extension: SignExtension = SignExtension.IF_SIGNED,

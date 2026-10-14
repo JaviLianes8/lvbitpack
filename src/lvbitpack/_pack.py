@@ -9,19 +9,20 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
-from ._errors import BitpackError, Buffer, as_bools, as_buffer, as_int, quote
+from ._errors import BitpackError, Buffer, as_bools, as_buffer, as_int, plain_str, quote
 
 BitOrder = Literal["msb", "lsb"]
 
 
 def _check_order(bit_order: object) -> bool:
     """True for least-significant-bit first."""
-    if isinstance(bit_order, str) and bit_order in ("msb", "lsb"):
-        return bit_order == "lsb"
+    text = plain_str(bit_order)
+    if text in ("msb", "lsb"):
+        return text == "lsb"
     raise BitpackError(f"bit_order must be 'msb' or 'lsb', not {quote(bit_order)}")
 
 
-def pack_bools(values: Iterable[bool], *, bit_order: BitOrder = "msb") -> bytes:
+def pack_bools(values: Iterable[bool | int], *, bit_order: BitOrder = "msb") -> bytes:
     """Pack Booleans eight to a byte, zero-filling the unused bits of the last byte.
 
     With ``bit_order="msb"`` (default) element 0 is bit 7 (0x80) of byte 0. With ``"lsb"``
@@ -64,7 +65,7 @@ def unpack_bools(
     if wanted < 0:
         raise BitpackError(f"count must not be negative, got {quote(wanted)}")
     if wanted > total:
-        raise BitpackError(f"count {quote(wanted)} asks for more than the {total} bits in data")
+        raise BitpackError(f"count is {quote(wanted)}, more than the {total} bits in data")
     return [
         bool(raw[index // 8] >> (index % 8 if lsb else 7 - index % 8) & 1)
         for index in range(wanted)
