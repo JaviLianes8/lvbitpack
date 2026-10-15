@@ -53,3 +53,12 @@ def test_a_subclass_whose_fields_raise_is_refused() -> None:
     broken = object.__new__(Broken)
     with pytest.raises(BitpackError, match="never initialised"):
         number_to_bools(1, broken)
+
+
+def test_a_shadowed_method_on_an_int_type_changes_nothing() -> None:
+    import copy
+
+    shadowed = copy.copy(U8)
+    shadowed.__dict__["contains"] = lambda value: True
+    with pytest.raises(BitpackError, match="out of range for u8"):
+        number_to_bools(300, shadowed)

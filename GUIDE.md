@@ -167,9 +167,11 @@ a bad value or type name are escaped). Checks look at an object's real type, nev
 or read as a buffer at all (a `TypeError` from `iter()`, `__index__` or the buffer
 protocol) is refused with `BitpackError`; any other exception your own object raises (from
 `__index__`, `__iter__`, while iterating, or from `__buffer__` on Python 3.12 and later,
-except a `ValueError` from `__buffer__`, which is refused) passes through unchanged. `SignExtension(...)` with anything but a member or one of its
-three names raises `BitpackError` too. Buffers of Python objects (a NumPy `object` array)
-are refused rather than read as pointers.
+except a `ValueError` from `__buffer__`, which is refused) passes through unchanged. `SignExtension(value)` with any single value other than a member
+or one of its three names raises `BitpackError` too (ordinary call mistakes, such as no
+argument, stay Python's `TypeError`). Buffers of Python objects (a NumPy `object` array) are
+refused rather than read as pointers; other buffers, ctypes pointers included, are read as
+the raw bytes they hold.
 
 | Situation | Message starts with |
 | --- | --- |
