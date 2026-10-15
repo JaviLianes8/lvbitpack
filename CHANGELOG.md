@@ -30,7 +30,7 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
 - `IntType` refuses a non-`int` or `bool` width and a non-`bool` `signed`; 0.2.0 accepted
   `IntType(8.0, "yes")`. `IntType.parse` accepts only the eight names (with `u`, `uint`, `i`,
   `int` prefixes); 0.2.0 accepted forms such as `"u08"`. A NumPy or other `__index__`
-  width is accepted and stored as `int`. `IntType.contains` answers False for `bool` and
+  width is accepted and stored as `int`, and a NumPy boolean `signed` is stored as `bool`. `IntType.contains` answers False for `bool` and
   floats (0.2.0 said True for `contains(1.0)` and `contains(True)`) and True for in-range
   `__index__` integers such as NumPy's.
 - Byte arguments accept any buffer-protocol object and read its raw bytes, so a buffer
