@@ -1,5 +1,9 @@
 # Improvements round: LabVIEW Boolean Array To Number and Number To Boolean Array
 
+Superseded by 1.0.0: `pack_flattened` and `unpack_flattened` now use LabVIEW's real
+flattened layout and the byte functions default to big-endian. CHANGELOG.md is current;
+this file records the earlier round as it was.
+
 This round adds a faithful, additive implementation of LabVIEW's **Boolean Array To
 Number** and **Number To Boolean Array** primitives, with configurable integer width,
 signed two's complement, the three documented sign-extension modes, byte serialization,

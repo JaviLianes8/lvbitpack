@@ -18,9 +18,8 @@ array as the binary form of one integer. Element 0 is the least significant bit.
 
 ```
 
-- Elements past the width are dropped.
-- An array shorter than the width is padded above its last element according to the
-  sign extension mode, which LabVIEW sets by right-clicking the node:
+Elements past the width are dropped. A shorter array is padded above its last element as
+the sign extension mode (set by right-clicking the node in LabVIEW) says:
 
 | Mode | Unsigned output pads with | Signed output pads with |
 | --- | --- | --- |
@@ -38,21 +37,17 @@ array as the binary form of one integer. Element 0 is the least significant bit.
 
 ```
 
-A signed output is the two's complement value. An empty array is 0 in every mode. In the
-LabVIEW 2026 captures, a node with no output representation set gave a U32, so pass `U32` to
-match such a node (that node was inserted by editing a VI file, not dropped from the palette,
-and NI does not document the default).
-
-Every rule above is checked against LabVIEW 2026 itself: the test suite replays about 2,900
-Boolean Array To Number results (all eight types under the three modes, arrays of 0 to 65
-elements), about 200 Number To Boolean Array results and six front-panel datalog files,
-all produced by LabVIEW on the author's machine (see `tests/fixtures/labview2026`).
+A signed output is the two's complement value; an empty array is 0 in every mode. The test
+suite replays about 2,900 results of this node and 200 of Number To Boolean Array produced
+by LabVIEW 2026 (all eight types, the three modes, arrays of 0 to 65 elements; see
+`tests/fixtures/labview2026`). There a node with no output representation set gave a U32
+(it was inserted by editing a VI file; NI does not document the default).
 
 ## Number To Boolean Array
 
 `number_to_bools(number, int_type)` returns one element per bit of the type, element 0 the
-least significant bit of the two's complement form. The number must fit the type; LabVIEW
-would have coerced it to the wire's type before the node ever saw it.
+least significant bit of the two's complement form. A number outside the type raises
+`BitpackError` (LabVIEW would have coerced it to the wire's type first).
 
 ```pycon
 >>> from lvbitpack import I8, U64, number_to_bools
@@ -60,12 +55,6 @@ would have coerced it to the wire's type before the node ever saw it.
 [False, True, True, True, True, True, True, True]
 >>> len(number_to_bools(5, U64))
 64
->>> from lvbitpack import BitpackError
->>> try:
-...     number_to_bools(128, I8)
-... except BitpackError as error:
-...     print(error)
-128 is out of range for i8 [-128, 127]
 
 ```
 
@@ -138,20 +127,18 @@ and files that pack bits.
 
 ```
 
-## What counts as a Boolean array
+## What counts as input
 
-Any finite iterable (a list, a tuple, a generator, a NumPy array) whose elements are `True`
-or `False`, the integers 0 or 1 (or objects with `__index__` giving 0 or 1), or NumPy
-booleans; the type hints say `Iterable[bool | int]`. A `str`, `bytes`, `bytearray` or
-`memoryview` is refused, because `"0101"` is not an array of four Booleans. Integer
-arguments (numbers, counts, `IntType` widths) accept any `__index__` integer except `bool`;
-`IntType.contains` answers False for anything else. Byte arguments accept any object with
-the buffer protocol (`bytes`, `bytearray`, `memoryview`, `array.array`, NumPy arrays), read
-as its raw bytes in memory order; text and lists are refused. `number` and `count` are
-typed `SupportsIndex`; the element and `IntType` hints name plain `bool` and `int`, so a
-type checker wants `bool(...)` or `int(...)` around NumPy scalars there, although they work
-at run time. Sets and dicts are iterables too, but a set has no element order, so pass a
-sequence.
+- A Boolean array is any finite iterable (list, tuple, generator, NumPy array) of `True`,
+  `False`, 0, 1 (or `__index__` objects giving 0 or 1) or NumPy booleans; the hints say
+  `Iterable[bool | int]`. `str`, `bytes`, `bytearray` and `memoryview` are refused: `"0101"`
+  is not four Booleans. A set has no element order, so pass a sequence.
+- Numbers, counts and `IntType` widths accept any `__index__` integer except `bool`
+  (`number` and `count` are typed `SupportsIndex`; elsewhere a type checker wants `int(...)`
+  or `bool(...)` around NumPy scalars). `IntType.contains` answers False for anything else.
+- Bytes are any buffer-protocol object (`bytes`, `bytearray`, `memoryview`, `array.array`,
+  NumPy arrays, ctypes objects), read as raw bytes in memory order. Text, lists and buffers
+  of Python objects (a NumPy `object` array) are refused.
 
 ```pycon
 >>> import array
@@ -163,19 +150,14 @@ sequence.
 
 ## Errors
 
-Every refusal raises `BitpackError`, a subclass of `ValueError`. Messages quote at most 40
-characters of a bad value and describe integers wider than 128 bits by their size, so huge
-input is never echoed, and they are printable ASCII (control characters and other text in
-a bad value or type name are escaped). Checks look at an object's real type, never at a
-`__class__` it claims. An object that cannot be iterated, indexed
-or read as a buffer at all (a `TypeError` from `iter()`, `__index__` or the buffer
-protocol) is refused with `BitpackError`; any other exception your own object raises (from
-`__index__`, `__iter__`, while iterating, or from `__buffer__` on Python 3.12 and later,
-except a `ValueError` from `__buffer__`, which is refused) passes through unchanged. `SignExtension(value)` with any single value other than a member
-or one of its three names raises `BitpackError` too (ordinary call mistakes, such as no
-argument, stay Python's `TypeError`). Buffers of Python objects (a NumPy `object` array) are
-refused rather than read as pointers; other buffers, ctypes pointers included, are read as
-the raw bytes they hold.
+Every refusal raises `BitpackError`, a subclass of `ValueError`, including
+`SignExtension(value)` for any value that is not a member or one of its three names.
+Messages are printable ASCII, quote at most 40 characters of a bad value and describe
+integers wider than 128 bits by their size. Checks use an object's real type, never a
+`__class__` it claims. An object that cannot be iterated, indexed or read as a buffer at
+all is refused; any other exception your own object raises (from `__index__`, `__iter__`,
+while iterating, or from `__buffer__` on Python 3.12 and later, except a `ValueError`)
+passes through unchanged, as do ordinary call mistakes such as a missing argument.
 
 | Situation | Message starts with |
 | --- | --- |
@@ -183,8 +165,9 @@ the raw bytes they hold.
 | element that is not a Boolean | `element <i> must be a boolean` |
 | text or bytes as the array | `values must be an iterable of booleans` |
 | wrong byte count for a number | `<type> needs exactly <n> bytes` |
-| flattened array too short, negative count, extra bytes | `a flattened array starts`, `the element count is negative`, `the count says`, `<n> byte(s) follow(s)` |
-| bad `byteorder`, `bit_order`, `sign_extension`, `int_type` | the parameter's name |
+| short flattened array | `a flattened array starts`, `the count says` |
+| negative count, extra bytes | `the element count is negative`, `<n> byte(s) follow(s)` |
+| bad option or `int_type` | the parameter's name |
 
 ## Command line
 
@@ -207,13 +190,11 @@ $ lvbitpack unflatten 0000000401000101
 
 Bit strings list element 0 first; `1`, `t`, `T` are TRUE, `0`, `f`, `F` FALSE, and spaces,
 commas and underscores are ignored. `unpack` reads decimal or `0x`, `0o`, `0b` prefixed
-numbers written with ASCII digits, negative ones included (`lvbitpack unpack -0x80 -t i8`)
-on every supported Python.
-Data errors print `lvbitpack: error: ...` to stderr and exit 1; usage errors, an unknown
-`--type` included, exit 2.
+numbers in ASCII digits, negative ones included (`unpack -0x80 -t i8`). Data errors print
+`lvbitpack: error: ...` and exit 1; usage errors, an unknown `--type` included, exit 2.
 
 ## Scope
 
-LabVIEW's Boolean Array To Number can also produce a fixed-point number, and Number To
-Boolean Array accepts one; lvbitpack covers the eight integer types only. Arrays of more
-than one dimension are not flattened here.
+Boolean Array To Number can also produce a fixed-point number, and Number To Boolean Array
+accepts one; lvbitpack covers the eight integer types. Multi-dimensional arrays are not
+flattened here.

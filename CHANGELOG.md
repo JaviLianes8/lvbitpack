@@ -30,9 +30,9 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
 - `IntType` refuses a non-`int` or `bool` width and a non-`bool` `signed`; 0.2.0 accepted
   `IntType(8.0, "yes")`. `IntType.parse` accepts only the eight names (with `u`, `uint`, `i`,
   `int` prefixes); 0.2.0 accepted forms such as `"u08"`. A NumPy or other `__index__`
-  width is accepted and stored as `int`, and a NumPy boolean `signed` is stored as `bool`. `IntType.contains` answers False for `bool` and
-  floats (0.2.0 said True for `contains(1.0)` and `contains(True)`) and True for in-range
-  `__index__` integers such as NumPy's.
+  width is accepted and stored as `int`, and a NumPy boolean `signed` is stored as `bool`.
+  `IntType.contains` answers False for `bool` and floats (0.2.0 said True for
+  `contains(1.0)` and `contains(True)`) and True for in-range `__index__` integers.
 - Byte arguments accept any buffer-protocol object and read its raw bytes, so a buffer
   of wide items (an `array.array("H")`, a NumPy `uint16` array) is measured in bytes; 0.2.0
   measured it in items. Lists of integers, which 0.2.0 read as bytes, are refused, and so
@@ -62,7 +62,7 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
 - `flatten` and `unflatten` commands.
 - `GUIDE.md` with executed examples.
 
-## [0.2.0]
+## [0.2.0] - not released
 
 - `bools_to_number` and `number_to_bools`: LabVIEW Boolean Array To Number and
   Number To Boolean Array, element 0 the least significant bit, U8/U16/U32/U64 and
@@ -73,7 +73,7 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
 - `number_to_bytes`, `bytes_to_number`, `bools_to_bytes`, and `bytes_to_bools`.
 - `lvbitpack` command line interface: `pack` and `unpack`.
 
-## [0.1.0]
+## [0.1.0] - not released
 
 - `pack_bools` and `unpack_bools`: MSB-first bit packing with zero padding of the
   final byte and count-aware unpacking.

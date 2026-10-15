@@ -31,6 +31,8 @@ def _wheel(tmp_path_factory: pytest.TempPathFactory) -> Path:
         return Path(given)
     if not (_ROOT / "src" / "lvbitpack" / "__init__.py").is_file():
         pytest.skip("no source tree to build from; set LVBITPACK_WHEEL to a built wheel")
+    if importlib.util.find_spec("pip") is None:
+        pytest.skip("this Python has no pip to build the wheel; set LVBITPACK_WHEEL instead")
     wheels = tmp_path_factory.mktemp("wheels")
     build = [sys.executable, "-m", "pip", "wheel", "--quiet", "--no-deps"]
     if importlib.util.find_spec("hatchling") is not None:
