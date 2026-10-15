@@ -161,11 +161,13 @@ as its raw bytes in memory order; text and lists are refused.
 
 Every refusal raises `BitpackError`, a subclass of `ValueError`. Messages quote at most 40
 characters of a bad value and describe integers wider than 128 bits by their size, so huge
-input is never echoed, and they are plain ASCII. An object that cannot be iterated, indexed
+input is never echoed, and they are printable ASCII (control characters and other text in
+a bad value or type name are escaped). Checks look at an object's real type, never at a
+`__class__` it claims. An object that cannot be iterated, indexed
 or read as a buffer at all (a `TypeError` from `iter()`, `__index__` or the buffer
 protocol) is refused with `BitpackError`; any other exception your own object raises (from
-`__index__`, `__iter__`, while iterating, or from `__buffer__` on Python 3.12 and later)
-passes through unchanged. `SignExtension(...)` with anything but a member or one of its
+`__index__`, `__iter__`, while iterating, or from `__buffer__` on Python 3.12 and later,
+except a `ValueError` from `__buffer__`, which is refused) passes through unchanged. `SignExtension(...)` with anything but a member or one of its
 three names raises `BitpackError` too. Buffers of Python objects (a NumPy `object` array)
 are refused rather than read as pointers.
 
@@ -199,7 +201,8 @@ $ lvbitpack unflatten 0000000401000101
 
 Bit strings list element 0 first; `1`, `t`, `T` are TRUE, `0`, `f`, `F` FALSE, and spaces,
 commas and underscores are ignored. `unpack` reads decimal or `0x`, `0o`, `0b` prefixed
-numbers; put `--` before a negative prefixed number (`lvbitpack unpack --type i8 -- -0x80`).
+numbers written with ASCII digits, negative ones included (`lvbitpack unpack -0x80 -t i8`)
+on every supported Python.
 Data errors print `lvbitpack: error: ...` to stderr and exit 1; usage errors, an unknown
 `--type` included, exit 2.
 

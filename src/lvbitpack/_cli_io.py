@@ -4,22 +4,17 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
+
+from ._text import printable
 
 if TYPE_CHECKING:
     from _typeshed import SupportsWrite
 
 # Usage and data error messages are cut here, so a huge argument is never echoed back.
 MESSAGE_LIMIT = 300
-
-
-def printable(text: str) -> str:
-    """``text`` with control characters and non-ASCII escaped, so argv cannot drive a terminal."""
-    return "".join(
-        char if " " <= char <= "~" else char.encode("unicode_escape").decode("ascii")
-        for char in text
-    )
 
 
 def silence(stream: object) -> None:
@@ -66,6 +61,12 @@ def write(stream_name: str, text: str) -> bool:
 
 class Parser(argparse.ArgumentParser):
     """An argument parser whose errors are bounded and survive a closed stderr."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Before Python 3.14 only -<digits> counted as a negative number, so -0x2 or -1_0
+        # were taken for options; read any dash followed by a digit as a value.
+        self._negative_number_matcher = re.compile(r"^-\.?\d")
 
     def error(self, message: str) -> NoReturn:
         message = printable(message)

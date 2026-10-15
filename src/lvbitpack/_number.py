@@ -14,7 +14,7 @@ from ._types import IntType, check_type
 
 
 def _check_mode(mode: object) -> SignExtension:
-    if not isinstance(mode, SignExtension):
+    if type(mode) is not SignExtension:
         raise BitpackError(f"sign_extension must be a SignExtension, not {quote(mode)}")
     return mode
 

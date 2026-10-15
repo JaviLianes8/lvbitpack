@@ -51,6 +51,8 @@ def _number(text: str) -> int:
     if len(text) > _NUMBER_LIMIT:
         raise BitpackError(f"the number has {len(text)} characters; at most 100 are read")
     try:
+        if not text.isascii():  # int() would also read other scripts' digits
+            raise ValueError(text)
         return int(text, 0)
     except ValueError:
         raise BitpackError(f"not an integer: {quote(text)}") from None

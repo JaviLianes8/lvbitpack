@@ -47,7 +47,8 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
 - The command line prefixes errors with `lvbitpack: error:`, bounds every message, exits 1
   quietly when its output pipe closes, and runs as `python -m lvbitpack`. An unknown
   `--type` is a usage error (exit 2, was 1). Bit strings also ignore `_`; `unpack` refuses
-  numbers longer than 100 characters.
+  numbers longer than 100 characters or written with non-ASCII digits, and reads negative
+  prefixed numbers such as `-0x2` on every supported Python.
 - Public functions report `lvbitpack` as their module in `help()`; the classes keep the
   module they are defined in, so source lookup and pickles find them.
 

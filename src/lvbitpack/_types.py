@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ._errors import BitpackError, as_int, is_integer, plain_str, quote, type_name
+from ._errors import BitpackError, as_int, is_integer, numpy_bool, plain_str, quote, type_name
 
 _VALID_BITS = (8, 16, 32, 64)
 _PREFIXES = (("uint", False), ("int", True), ("u", False), ("i", True))
@@ -35,8 +35,10 @@ class IntType:
         if bits not in _VALID_BITS:
             raise BitpackError(f"bits must be 8, 16, 32 or 64, not {quote(bits)}")
         object.__setattr__(self, "bits", bits)  # a NumPy or other __index__ width is stored as int
-        if not isinstance(self.signed, bool):
+        signed = self.signed if type(self.signed) is bool else numpy_bool(self.signed)
+        if signed is None:
             raise BitpackError(f"signed must be a bool, not {type_name(self.signed)}")
+        object.__setattr__(self, "signed", signed)
 
     @property
     def name(self) -> str:
@@ -134,9 +136,11 @@ def check_type(int_type: object) -> IntType:
     A subclass is rebuilt from its two fields, so overridden methods change nothing.
     """
     kind = type(int_type)
-    if kind is IntType:
-        return int_type  # type: ignore[return-value]
     if not issubclass(kind, IntType):
         raise BitpackError(f"int_type must be an IntType such as U8, not {type_name(int_type)}")
-    bits = object.__getattribute__(int_type, "bits")
-    return IntType(bits, object.__getattribute__(int_type, "signed"))
+    try:
+        bits = object.__getattribute__(int_type, "bits")
+        signed = object.__getattribute__(int_type, "signed")
+    except AttributeError:  # made with __new__ and never initialised
+        raise BitpackError("int_type is an IntType that was never initialised") from None
+    return int_type if kind is IntType else IntType(bits, signed)  # type: ignore[return-value]

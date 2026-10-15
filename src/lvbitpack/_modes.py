@@ -16,8 +16,8 @@ class _ModeLookup(enum.EnumMeta):
     """
 
     def __call__(cls, value: Any, *args: Any, **kwargs: Any) -> Any:
-        if args or kwargs:  # the functional API that builds a new enum
-            return super().__call__(value, *args, **kwargs)
+        if args or kwargs:  # the functional API cannot extend an enum that has members
+            raise BitpackError("SignExtension takes exactly one value")
         if type(value) is cls:
             return value
         text = plain_str(value)

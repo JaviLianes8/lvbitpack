@@ -1,18 +1,22 @@
-"""The library's error type and the input checks every public function shares."""
+"""The library's error type and the input checks every public function shares.
+
+Every check looks at ``type(value)``, never at ``value.__class__``, so an object that lies
+about its class (or whose attribute lookup fails) cannot slip past or raise its own error.
+"""
 
 from __future__ import annotations
 
 import operator
-import reprlib
 from collections.abc import Iterable
 from typing import Protocol
 
-# Values quoted in messages are cut to this many characters, so huge input is never echoed.
-_QUOTE_LIMIT = 40
+from ._text import plain_str, quote, type_name
+
+__all__ = ["BitpackError", "Buffer", "as_bool", "as_bools", "as_buffer", "as_int"]
+__all__ += ["is_integer", "numpy_bool", "plain_str", "quote", "type_name"]
+
 _NUMPY_BOOL_NAMES = frozenset({"bool", "bool_"})
-_REPR = reprlib.Repr()
-_REPR.maxstring = _REPR.maxother = _QUOTE_LIMIT + 10
-_REPR.maxlist = _REPR.maxtuple = _REPR.maxdict = _REPR.maxset = 4
+_BYTE_STRINGS = (bytes, bytearray, memoryview)
 
 
 class Buffer(Protocol):
@@ -35,44 +39,18 @@ class BitpackError(ValueError):
     """
 
 
-def quote(value: object) -> str:
-    """A short, safe, ASCII description of ``value`` for an error message."""
-    try:
-        if isinstance(value, int) and not isinstance(value, bool):
-            size = int.bit_length(value)  # the int method: a subclass cannot override it
-            if size > 128:
-                return f"an integer of {size} bits"
-            return int.__repr__(value)
-        text = _REPR.repr(value)
-    except Exception:  # a hostile object must not replace our error with its own
-        return f"<{type_name(value)} object>"
-    text = text.encode("ascii", "backslashreplace").decode("ascii")
-    return text if len(text) <= _QUOTE_LIMIT else text[:_QUOTE_LIMIT] + "..."
-
-
-def type_name(value: object) -> str:
-    """The type name of ``value``, cut for messages; a metaclass cannot change it."""
-    try:
-        name = type.__dict__["__name__"].__get__(type(value), type)
-        name = name.encode("ascii", "backslashreplace").decode("ascii")
-    except Exception:
-        name = "object"
-    return str(name)[:_QUOTE_LIMIT]
-
-
-def plain_str(value: object) -> str | None:
-    """``value`` as an exact ``str`` without calling a subclass's methods, else None."""
-    return str.__str__(value) if issubclass(type(value), str) else None
-
-
 def is_integer(value: object) -> bool:
-    """Whether ``value`` is an ``__index__`` integer other than ``bool``."""
-    return not isinstance(value, bool) and hasattr(type(value), "__index__")
+    """Whether ``value``'s type has ``__index__`` and is not ``bool``."""
+    kind = type(value)
+    try:
+        return kind is not bool and hasattr(kind, "__index__")
+    except Exception:  # a metaclass whose attribute lookup fails
+        return False
 
 
 def as_int(value: object, what: str) -> int:
     """``value`` as a plain ``int``; ``bool`` and non-integers are refused."""
-    if isinstance(value, bool):
+    if type(value) is bool:
         raise BitpackError(f"{what} must be an integer, not bool")
     try:
         return int(operator.index(value))  # type: ignore[arg-type]
@@ -80,21 +58,31 @@ def as_int(value: object, what: str) -> int:
         raise BitpackError(f"{what} must be an integer, not {type_name(value)}") from None
 
 
+def numpy_bool(value: object) -> bool | None:
+    """The truth of a NumPy boolean scalar, or None when ``value`` is not one."""
+    kind = type(value)
+    try:
+        module = type.__dict__["__module__"].__get__(kind, type)
+    except Exception:
+        return None
+    if type_name(value) not in _NUMPY_BOOL_NAMES or type(module) is not str:
+        return None
+    if module != "numpy" and not module.startswith("numpy."):
+        return None
+    try:
+        truth = bool(value)
+    except Exception:
+        return None
+    return truth
+
+
 def as_bool(value: object, index: int) -> bool:
     """One array element as a ``bool``: True/False, 0/1, or a NumPy boolean."""
     if type(value) is bool:
         return value
-    kind = type(value)
-    try:
-        module = getattr(kind, "__module__", None)
-    except Exception:  # a metaclass may make even this lookup fail
-        module = None
-    if (
-        type_name(value) in _NUMPY_BOOL_NAMES
-        and isinstance(module, str)
-        and module.startswith("numpy")
-    ):
-        return bool(value)
+    truth = numpy_bool(value)
+    if truth is not None:
+        return truth
     try:
         number = int(operator.index(value))  # type: ignore[arg-type]
     except TypeError:
@@ -106,11 +94,12 @@ def as_bool(value: object, index: int) -> bool:
 
 def as_bools(values: Iterable[object]) -> list[bool]:
     """A finite iterable of booleans as a list; text and byte strings are refused."""
-    if isinstance(values, (str, bytes, bytearray, memoryview)):
-        kind = "a string" if isinstance(values, str) else "a byte string"
+    kind = type(values)
+    if issubclass(kind, (str, *_BYTE_STRINGS)):
+        what = "a string" if issubclass(kind, str) else "a byte string"
         raise BitpackError(
             f"values must be an iterable of booleans, not {type_name(values)}; "
-            f"{kind} is not a Boolean array"
+            f"{what} is not a Boolean array"
         )
     try:
         items = iter(values)
@@ -123,7 +112,7 @@ def as_bools(values: Iterable[object]) -> list[bool]:
 
 def as_buffer(data: object, what: str = "data") -> bytes:
     """The raw bytes of any buffer-protocol object; text and everything else is refused."""
-    if not isinstance(data, str):
+    if not issubclass(type(data), str):
         try:
             with memoryview(data) as view:  # type: ignore[arg-type]
                 if "O" in view.format:  # object pointers are not data
