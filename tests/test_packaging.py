@@ -42,6 +42,22 @@ def test_metadata_is_stable_and_dependency_free() -> None:
     assert project["scripts"] == {"lvbitpack": "lvbitpack._cli:main"}
 
 
+def test_installed_metadata_on_every_python() -> None:
+    from importlib import metadata
+
+    try:
+        found = metadata.metadata("lvbitpack")
+    except metadata.PackageNotFoundError:
+        pytest.skip("lvbitpack is not installed, only on the path")
+    assert found["Version"] == lvbitpack.__version__
+    assert found["Requires-Python"] == ">=3.10"
+    classifiers = found.get_all("Classifier") or []
+    assert "Development Status :: 5 - Production/Stable" in classifiers
+    assert "Programming Language :: Python :: 3.10" in classifiers
+    required = found.get_all("Requires-Dist") or []
+    assert all("extra ==" in line for line in required)  # only the dev extra, no runtime need
+
+
 def test_readme_links_are_absolute_and_reach_the_guide_and_changelog() -> None:
     readme = (_ROOT / "README.md").read_text(encoding="utf-8")
     links = re.findall(r"\]\(([^)]+)\)", readme)

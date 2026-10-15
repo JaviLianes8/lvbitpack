@@ -37,7 +37,10 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
   of wide items (an `array.array("H")`, a NumPy `uint16` array) is measured in bytes; 0.2.0
   measured it in items. Lists of integers, which 0.2.0 read as bytes, are refused.
 - `SignExtension(...)` with anything but a member or one of its three names raises
-  `BitpackError` (still a `ValueError`); the enum moved to its own private module.
+  `BitpackError` (still a `ValueError`). `sign_extension=` takes only a `SignExtension`
+  member: 0.2.0 silently treated a string such as `"never"` as `IF_SIGNED`.
+- `IntType` and `SignExtension` are defined in private modules other than 0.2.0's
+  (`lvbitpack._types`, `lvbitpack._modes`); pickles made by 0.2.0 still load.
 - Numbers are checked: `bool` and non-integers are refused, `__index__` integers (NumPy)
   accepted, and messages never print a huge integer (0.2.0 failed inside its own message
   for integers beyond Python's 4300-digit printing limit).
