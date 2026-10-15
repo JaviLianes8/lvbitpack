@@ -106,3 +106,28 @@ than reading, and reported back privately.
 | a. API and docs | 1 | 6cc718d | FAIL (1 high, 1 medium, 6 low, info) | 112 probes, 48 doctests, 26 GUIDE and 2 README examples, 35 CLI checks, 63 behaviour expressions against 0.2.0, strict consumers. README claimed a LabVIEW 2026 check before the captures existed; byte inputs narrowed versus 0.2.0; `IntType` refused NumPy widths and `contains` changed silently; hints stricter than the 0/1 runtime; private module names in `help()`; CLI changes and one cause missing or wrong in the CHANGELOG; parameter naming reviewed and kept deliberately. Fixed in 5cb3cd3 (the LabVIEW claim waits for the captures) |
 | c. Adversarial and robustness | 1 | 6cc718d | FAIL (2 medium, 5 low, info) | 400,000 seeded API calls on 8 seeds, 100,000 oracle round trips, 60,000 in-process and 450 subprocess CLI runs, 16 threads with 480,000 calls, 19 scaling shapes all linear. Mocks and hostile int subclasses leaked their own errors through message quoting; option checks compared before type checks; a bytes subclass's `__bytes__` and a released view leaked; `parse` called str-subclass methods; unknown `SignExtension` names gave a plain enum error; an ASCII-only stderr was treated as a gone reader. Fixed in 5cb3cd3 |
 | e. Contract strength | 1 | 6cc718d | FAIL until its contracts were added | 115 blind mutations: 84 killed, 8 proven equivalent (differential digests over up to 1.7 million cases each), 23 survivors; its 23 contracts added in 6a28a86 (`tests/test_contract_strength.py`, `tests/test_contract_strength_cli.py`) |
+| e. Contract strength | 2 | 45ae1b0 | FAIL until its contracts were added | 140 mutations (115 re-anchored plus 25 on the new code): 122 killed, 7 proven equivalent, 11 survivors in the new code; its 9 contracts added in 3713fdd (`tests/test_contract_strength_two.py`) |
+| a. API and docs | 2 | 45ae1b0 | PASS (3 low, info) | 147 consumer checks with and without NumPy, 22 NumPy checks, strict consumers for 3.10, 3.12 and 3.14, the suite against the installed wheel; all round 1 findings fixed but the LabVIEW claim. New: renaming the classes' module broke `inspect.getsource`; `help()` still named a private module on 3.14; three byte-input lines inexact. Fixed in 3713fdd (classes keep their real module; functions only are renamed) |
+| c. Adversarial and robustness | 2 | 6a28a86 | FAIL (4 medium, 5 low) | 320,781 seeded calls, 39,402 in-process CLI runs, about 100,000 calls on 8 threads with the GIL off (3.14.2t), about 130 hostile probes on 3.10 to 3.14, scaling linear to 4 million. `SignExtension(...)` leaked the enum's own errors for huge, released or hostile values; `Mock(spec=str)` and `Mock(spec=IntType)` leaked; an `IntType` subclass could relax the range check; `contains` raised for NumPy arrays; odd buffers misreported; usage errors echoed control characters; a metaclass `__name__` leaked; singular wording. Fixed in f341592 (`tests/test_hostile_three.py`) |
+
+## Ground truth (item 7)
+
+`tests/fixtures/labview2026/` holds results produced by LabVIEW 2026 Community 26.3.1f1 on
+this PC on 2026-10-14; `manifest.json` records the method, every file's size and SHA-256 and
+the hashes of the raw capture records. VI Scripting is not reachable over ActiveX, so the test
+VIs were made from a copy of the shipped example `examples/Booleans/Boolean Functions.vi` by
+editing its block diagram heap with pylabview (one node replaced by the primitive, its output
+representation and Sign Extension Mode set); LabVIEW loaded, compiled and ran each VI, and
+inputs and outputs went through its ActiveX server. `tests/test_real_labview.py` replays:
+
+- Boolean Array To Number: 2,940 distinct results over 30 configurations (U8 to I64 under
+  the three modes, and a node with no output representation chosen), arrays of 0 to 65
+  elements. All agree with lvbitpack and with NI's table. A node without an explicit
+  representation outputs U32, which the guide now states.
+- Number To Boolean Array: 194 results over the eight integer types, minimum, maximum and
+  seeded values.
+- Six front-panel datalog files (Boolean arrays of 0, 1, 8, 9, 17 and 300 elements) copied
+  unchanged: each holds exactly the bytes `pack_flattened` writes.
+
+Not captured: how LabVIEW's Unflatten reads an element byte other than 0x00 and 0x01 (the
+"any nonzero is TRUE" rule comes from NI's Flattened Data page).
