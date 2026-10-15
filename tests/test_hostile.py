@@ -114,8 +114,8 @@ def test_numbers_must_be_integers(number: object) -> None:
 
 
 def test_index_objects_are_integers() -> None:
-    assert number_to_bytes(Index(-2), I8) == b"\xfe"  # type: ignore[arg-type]
-    assert unpack_bools(b"\x80", Index(1)) == [True]  # type: ignore[arg-type]
+    assert number_to_bytes(Index(-2), I8) == b"\xfe"
+    assert unpack_bools(b"\x80", Index(1)) == [True]
 
 
 @pytest.mark.parametrize("int_type", ["u8", 8, None, (8, False)])

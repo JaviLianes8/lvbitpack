@@ -147,7 +147,11 @@ booleans; the type hints say `Iterable[bool | int]`. A `str`, `bytes`, `bytearra
 arguments (numbers, counts, `IntType` widths) accept any `__index__` integer except `bool`;
 `IntType.contains` answers False for anything else. Byte arguments accept any object with
 the buffer protocol (`bytes`, `bytearray`, `memoryview`, `array.array`, NumPy arrays), read
-as its raw bytes in memory order; text and lists are refused.
+as its raw bytes in memory order; text and lists are refused. `number` and `count` are
+typed `SupportsIndex`; the element and `IntType` hints name plain `bool` and `int`, so a
+type checker wants `bool(...)` or `int(...)` around NumPy scalars there, although they work
+at run time. Sets and dicts are iterables too, but a set has no element order, so pass a
+sequence.
 
 ```pycon
 >>> import array

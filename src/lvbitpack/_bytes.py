@@ -8,7 +8,7 @@ big-endian, the order of LabVIEW's Flatten To String and Type Cast.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, SupportsIndex
 
 from ._errors import BitpackError, Buffer, as_buffer, as_int, plain_str, quote
 from ._modes import SignExtension
@@ -27,7 +27,9 @@ def _check_order(byteorder: object) -> Literal["big", "little"]:
     raise BitpackError(f"byteorder must be 'big' or 'little', not {quote(byteorder)}")
 
 
-def number_to_bytes(number: int, int_type: IntType, *, byteorder: ByteOrder = "big") -> bytes:
+def number_to_bytes(
+    number: SupportsIndex, int_type: IntType, *, byteorder: ByteOrder = "big"
+) -> bytes:
     """The ``int_type.bits // 8`` bytes of ``number``, big-endian unless told otherwise.
 
     >>> from lvbitpack import I16, number_to_bytes

@@ -7,7 +7,7 @@ register maps and files that want one bit per element.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, SupportsIndex
 
 from ._errors import BitpackError, Buffer, as_bools, as_buffer, as_int, plain_str, quote
 
@@ -45,7 +45,7 @@ def pack_bools(values: Iterable[bool | int], *, bit_order: BitOrder = "msb") -> 
 
 
 def unpack_bools(
-    data: Buffer, count: int | None = None, *, bit_order: BitOrder = "msb"
+    data: Buffer, count: SupportsIndex | None = None, *, bit_order: BitOrder = "msb"
 ) -> list[bool]:
     """Unpack ``count`` Booleans (default: every bit) from bytes written by ``pack_bools``.
 

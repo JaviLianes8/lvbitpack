@@ -7,6 +7,7 @@ fixed-width integer; there is no count and no byte per element, unlike a flatten
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import SupportsIndex
 
 from ._errors import BitpackError, as_bools, as_int, quote
 from ._modes import SignExtension
@@ -64,7 +65,7 @@ def bools_to_number(
     return raw
 
 
-def number_to_bools(number: int, int_type: IntType) -> list[bool]:
+def number_to_bools(number: SupportsIndex, int_type: IntType) -> list[bool]:
     """Convert an integer to a Boolean array, as LabVIEW's Number To Boolean Array does.
 
     The result has one element per bit of the type (8, 16, 32 or 64); element 0 holds the

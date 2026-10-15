@@ -35,7 +35,9 @@ in `lvbitpack.__all__`; their names, signatures, defaults and error type are now
   `__index__` integers such as NumPy's.
 - Byte arguments accept any buffer-protocol object and read its raw bytes, so a buffer
   of wide items (an `array.array("H")`, a NumPy `uint16` array) is measured in bytes; 0.2.0
-  measured it in items. Lists of integers, which 0.2.0 read as bytes, are refused.
+  measured it in items. Lists of integers, which 0.2.0 read as bytes, are refused, and so
+  are buffers of Python objects (a NumPy `object` array), which 0.2.0 read as pointer bytes.
+- `number` and `count` are typed `SupportsIndex`, so NumPy integers pass a type checker.
 - `SignExtension(...)` with anything but a member or one of its three names raises
   `BitpackError` (still a `ValueError`). `sign_extension=` takes only a `SignExtension`
   member: 0.2.0 silently treated a string such as `"never"` as `IF_SIGNED`.
