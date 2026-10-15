@@ -131,3 +131,4 @@ inputs and outputs went through its ActiveX server. `tests/test_real_labview.py`
 
 Not captured: how LabVIEW's Unflatten reads an element byte other than 0x00 and 0x01 (the
 "any nonzero is TRUE" rule comes from NI's Flattened Data page).
+| b. Correctness and ground truth | 1 | 5618d69 | PASS (2 low, 3 info) | NI pages fetched again, every doc claim checked; own string and `struct` oracle over 1,293,926 seeded checks with 125,000 in-process and 300 subprocess CLI runs, 0 failures; all 3,134 LabVIEW rows and 6 datalogs decoded independently (own `DTLG` record parser), U32 the only type that fits the unconfigured-node rows. Notes: the U32 default was stated as if for a palette-placed node; the manifest omitted lengths 4 and 5; raw capture records not fetchable; "never packs" too absolute; the flatten count depends on the prepend-size input. Wording fixed in 40947af; the raw records stay on the capture machine (their hashes are in the manifest) |
