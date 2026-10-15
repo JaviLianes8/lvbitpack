@@ -8,10 +8,34 @@ Progress:
 - [x] Real LabVIEW 2026 captures (item 7)
 - [x] Contract, fuzz and author mutation round (items 6, 9, 18)
 - [x] Docs: README, GUIDE, CHANGELOG (items 11, 12)
-- [ ] Packaging, e2e, every interpreter (items 8, 10, 13, 14)
-- [ ] Independent reviewer and five QA lenses report PASS (items 16, 19)
-- [ ] Gates (item 15)
+- [x] Packaging, e2e, every interpreter (items 8, 10, 13, 14)
+- [ ] Independent reviewer and five QA lenses report PASS (items 16, 19): all five lenses PASS; reviewer pending
+- [x] Gates (item 15)
 - [ ] PR and trace guard CLEAN (item 17); merge and publish left to the maintainer
+
+## Scorecard
+
+| # | Item | Verdict | Evidence |
+| --- | --- | --- | --- |
+| 1 | API reviewed for stability | PASS | 21 public names; `BitpackError` added, `pack_flattened`/`unpack_flattened` now LabVIEW's real layout, byte order big-endian by default, `bit_order` and optional `count` added, `number`/`count` typed `SupportsIndex`; every change in CHANGELOG 1.0.0 (lens a PASS at round 3, lens d re-derived every 0.2.0 difference) |
+| 2 | `__all__` exact | PASS | `test_contract::test_all_lists_exactly_the_public_api` (no other public attribute) |
+| 3 | Docstrings with runnable examples, doctests pass | PASS | every module doctested (`test_docs`), every public name and `IntType` member has `>>>`, README and GUIDE examples and transcripts executed |
+| 4 | Typed end to end | PASS | `mypy --strict src tests` clean; `py.typed` shipped; strict consumers for 3.10 to 3.14 with NumPy (lens a); `get_type_hints` on every name and member |
+| 5 | Typed, documented, safe errors | PASS | one `BitpackError` (a `ValueError`); GUIDE error table and pass-through rules; messages printable ASCII, values cut to 40 characters, wide integers by size (five adversarial rounds) |
+| 6 | Contract asserts the full promise | PASS | `test_contract` plus the contracts from four author and blind mutation rounds and five adversarial rounds |
+| 7 | Real ground truth | PASS | 2,940 Boolean Array To Number and 194 Number To Boolean Array results and 6 datalogs from LabVIEW 2026 on this PC (manifest with SHA-256), NI's table and Flattened Data examples; lens b decoded all of it with its own oracle |
+| 8 | Real e2e | PASS | wheel built and installed in throwaway venvs, console script and `python -m` by subprocess, five sabotaged wheels caught, sdist install; no PyPI release exists (404), so the upgrade was checked from the 0.2.0 source |
+| 9 | Seeded fuzz, no crash, hang or blow-up | PASS | seeded fuzz and scaling tests in the suite; lens c rounds totalling about 3.2 million calls, every dimension linear |
+| 10 | Every interpreter | PASS | 3.10.19, 3.11.5, 3.12.12, 3.13.2, 3.14.2 and 3.14.2t from the installed wheel (lens d); the Astral 3.10.22 to 3.14.8 entries of `py -0p` point at a deleted folder and could not run |
+| 11 | README | PASS | `twine check --strict` PASSED; absolute links tested; problem, verified why (NumPy `packbits`, `bitarray`, `bitstring` checked), install, quick start, GUIDE and CHANGELOG links |
+| 12 | CHANGELOG dated 1.0.0 | PASS | `## [1.0.0] - 2026-10-14` with the stable surface and every behaviour change from 0.2.0 |
+| 13 | pyproject | PASS | 1.0.0, Production/Stable, 3.10 to 3.14, MIT, Homepage/Source/Issues/Changelog, keywords, `dependencies = []` (contract-tested, installed metadata too) |
+| 14 | sdist and wheel contents | PASS | wheel: package, `py.typed`, LICENSE, metadata; sdist: source, tests with the LabVIEW fixtures and manifest, docs; no scripts, caches or process notes (lens d) |
+| 15 | Gates exit 0 alone | PASS | `ruff format --check .`, `ruff check .`, `mypy --strict src`, `pytest`, each run alone |
+| 16 | Independent reviewer | pending | |
+| 17 | PR, trace guard | pending | |
+| 18 | Mutation round | PASS | author: 46 at 24b1cf0, 44 killed, 2 equivalent; blind lens e: 115, then 140, then 175 on the final source with no non-equivalent survivor |
+| 19 | Five QA lenses | PASS | a (round 3), b (round 1), c (round 5), d (round 1), e (confirmation round) |
 
 ## Baseline on 0.2.0 (before any change)
 
