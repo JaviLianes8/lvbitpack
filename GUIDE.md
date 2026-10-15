@@ -38,9 +38,10 @@ array as the binary form of one integer. Element 0 is the least significant bit.
 
 ```
 
-A signed output is the two's complement value. An empty array is 0 in every mode. A node
-placed in LabVIEW 2026 without choosing an output representation gives a U32, so pass `U32`
-to match it.
+A signed output is the two's complement value. An empty array is 0 in every mode. In the
+LabVIEW 2026 captures, a node with no output representation set gave a U32, so pass `U32` to
+match such a node (that node was inserted by editing a VI file, not dropped from the palette,
+and NI does not document the default).
 
 Every rule above is checked against LabVIEW 2026 itself: the test suite replays about 2,900
 Boolean Array To Number results (all eight types under the three modes, arrays of 0 to 65
@@ -104,8 +105,9 @@ b'\x02\x00'
 
 ## Flattened Boolean arrays
 
-`pack_flattened` writes what LabVIEW's Flatten To String writes for a 1-D Boolean array: a
-big-endian I32 element count, then one byte per element, 0x01 for TRUE and 0x00 for FALSE.
+`pack_flattened` writes what LabVIEW's Flatten To String writes for a 1-D Boolean array with
+its "prepend array or string size?" input left at its default (TRUE): a big-endian I32
+element count, then one byte per element, 0x01 for TRUE and 0x00 for FALSE.
 `unpack_flattened` reads it back; any nonzero element byte is TRUE, and the input must hold
 exactly the counted elements.
 
@@ -124,7 +126,8 @@ exactly the counted elements.
 byte with zeros. `bit_order="msb"` (default) puts element 0 in bit 7 of byte 0; `"lsb"` puts
 it in bit 0, so each byte equals Boolean Array To Number of its eight elements as a U8.
 `unpack_bools(data, count=None)` reads `count` elements, or every bit when `count` is None.
-LabVIEW itself never packs Booleans this way; this is for protocols and files that do.
+Current LabVIEW stores and flattens a Boolean as a whole byte; this form is for protocols
+and files that pack bits.
 
 ```pycon
 >>> from lvbitpack import pack_bools, unpack_bools
