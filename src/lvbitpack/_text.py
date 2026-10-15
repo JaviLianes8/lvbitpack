@@ -1,4 +1,4 @@
-"""Safe text for error messages: short, printable ASCII, never computed by hostile code."""
+"""Safe text for error messages: short and printable ASCII, whatever the object does."""
 
 from __future__ import annotations
 

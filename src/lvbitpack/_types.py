@@ -141,6 +141,8 @@ def check_type(int_type: object) -> IntType:
     try:
         bits = object.__getattribute__(int_type, "bits")
         signed = object.__getattribute__(int_type, "signed")
-    except AttributeError:  # made with __new__ and never initialised
+    except Exception:  # never initialised, or a subclass whose field lookup fails
         raise BitpackError("int_type is an IntType that was never initialised") from None
-    return int_type if kind is IntType else IntType(bits, signed)  # type: ignore[return-value]
+    if kind is IntType and type(bits) is int and type(signed) is bool and bits in (8, 16, 32, 64):
+        return int_type  # type: ignore[return-value]
+    return IntType(bits, signed)  # rebuilt, so a subclass or a tampered value is checked

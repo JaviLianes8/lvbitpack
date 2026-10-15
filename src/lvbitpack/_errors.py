@@ -7,6 +7,7 @@ about its class (or whose attribute lookup fails) cannot slip past or raise its 
 from __future__ import annotations
 
 import operator
+import re
 from collections.abc import Iterable
 from typing import Protocol
 
@@ -17,6 +18,7 @@ __all__ += ["is_integer", "numpy_bool", "plain_str", "quote", "type_name"]
 
 _NUMPY_BOOL_NAMES = frozenset({"bool", "bool_"})
 _BYTE_STRINGS = (bytes, bytearray, memoryview)
+_FIELD_NAME = re.compile(r":[^:]*:")  # struct-format field names, which may contain an O
 
 
 class Buffer(Protocol):
@@ -42,15 +44,17 @@ class BitpackError(ValueError):
 def is_integer(value: object) -> bool:
     """Whether ``value``'s type has ``__index__`` and is not ``bool``."""
     kind = type(value)
+    if kind is bool or numpy_bool(value) is not None:
+        return False
     try:
-        return kind is not bool and hasattr(kind, "__index__")
+        return hasattr(kind, "__index__")
     except Exception:  # a metaclass whose attribute lookup fails
         return False
 
 
 def as_int(value: object, what: str) -> int:
     """``value`` as a plain ``int``; ``bool`` and non-integers are refused."""
-    if type(value) is bool:
+    if type(value) is bool or numpy_bool(value) is not None:
         raise BitpackError(f"{what} must be an integer, not bool")
     try:
         return int(operator.index(value))  # type: ignore[arg-type]
@@ -78,8 +82,15 @@ def numpy_bool(value: object) -> bool | None:
 
 def as_bool(value: object, index: int) -> bool:
     """One array element as a ``bool``: True/False, 0/1, or a NumPy boolean."""
-    if type(value) is bool:
-        return value
+    kind = type(value)
+    if kind is bool:
+        return value  # type: ignore[return-value]
+    if kind is int:  # the common 0/1 case, before the slower checks
+        if value in (0, 1):
+            return value == 1
+        raise BitpackError(
+            f"element {index} must be a boolean (True/False or 0/1), not {quote(value)}"
+        )
     truth = numpy_bool(value)
     if truth is not None:
         return truth
@@ -115,7 +126,7 @@ def as_buffer(data: object, what: str = "data") -> bytes:
     if not issubclass(type(data), str):
         try:
             with memoryview(data) as view:  # type: ignore[arg-type]
-                if "O" in view.format:  # object pointers are not data
+                if "O" in _FIELD_NAME.sub("", view.format):  # object pointers are not data
                     raise BitpackError(f"{what} holds Python objects, not bytes")
                 return view.tobytes()  # raw bytes in memory order, any item format
         except TypeError:
