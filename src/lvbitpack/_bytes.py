@@ -1,51 +1,96 @@
-"""Byte serialization for Boolean Array To Number results.
+"""Fixed-width bytes for the numbers Boolean Array To Number produces.
 
-The array bit order (element 0 is the LSB) is fixed and independent of byte order.
-Byte order only chooses how the resulting integer is laid out across its bytes.
+The element to bit mapping (element 0 is the least significant bit) never depends on byte
+order; byte order only lays the finished integer out across its bytes. The default is
+big-endian, the order of LabVIEW's Flatten To String and Type Cast.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Literal
+from collections.abc import Iterable
+from typing import Literal, SupportsIndex
 
-from ._number import IntType, SignExtension, bools_to_number, number_to_bools
+from ._errors import BitpackError, Buffer, as_buffer, as_int, plain_str, quote
+from ._modes import SignExtension
+from ._number import bools_to_number, number_to_bools
+from ._types import IntType, check_type
 
-ByteOrder = Literal["little", "big"]
+ByteOrder = Literal["big", "little"]
 
 
-def number_to_bytes(number: int, int_type: IntType, *, byteorder: ByteOrder = "little") -> bytes:
-    """Serialize a number to its fixed-width bytes, little or big endian."""
-    if not int_type.contains(number):
-        raise ValueError(
-            f"{number} is out of range for {int_type.name} [{int_type.min}, {int_type.max}]"
+def _check_order(byteorder: object) -> Literal["big", "little"]:
+    text = plain_str(byteorder)
+    if text == "big":
+        return "big"
+    if text == "little":
+        return "little"
+    raise BitpackError(f"byteorder must be 'big' or 'little', not {quote(byteorder)}")
+
+
+def number_to_bytes(
+    number: SupportsIndex, int_type: IntType, *, byteorder: ByteOrder = "big"
+) -> bytes:
+    """The ``int_type.bits // 8`` bytes of ``number``, big-endian unless told otherwise.
+
+    >>> from lvbitpack import I16, number_to_bytes
+    >>> number_to_bytes(-2, I16), number_to_bytes(-2, I16, byteorder="little")
+    (b'\\xff\\xfe', b'\\xfe\\xff')
+    """
+    int_type = check_type(int_type)
+    order = _check_order(byteorder)
+    value = as_int(number, "number")
+    if not int_type.contains(value):
+        raise BitpackError(
+            f"{quote(value)} is out of range for {int_type.name} [{int_type.min}, {int_type.max}]"
         )
-    return number.to_bytes(int_type.bits // 8, byteorder, signed=int_type.signed)
+    return value.to_bytes(int_type.bits // 8, order, signed=int_type.signed)
 
 
-def bytes_to_number(data: bytes, int_type: IntType, *, byteorder: ByteOrder = "little") -> int:
-    """Read a number from exactly the type's width in bytes."""
+def bytes_to_number(data: Buffer, int_type: IntType, *, byteorder: ByteOrder = "big") -> int:
+    """Read a number from exactly ``int_type.bits // 8`` bytes.
+
+    ``data`` is any buffer-protocol object (``bytes``, ``bytearray``, ``memoryview``,
+    ``array.array``, NumPy arrays), read as its raw bytes in memory order.
+
+    >>> from lvbitpack import I16, U16, bytes_to_number
+    >>> bytes_to_number(b"\\xff\\xfe", I16), bytes_to_number(b"\\xff\\xfe", U16)
+    (-2, 65534)
+    """
+    int_type = check_type(int_type)
+    order = _check_order(byteorder)
+    raw = as_buffer(data)
     width = int_type.bits // 8
-    if len(data) != width:
-        raise ValueError(f"{int_type.name} needs exactly {width} bytes, got {len(data)}")
-    return int.from_bytes(data, byteorder, signed=int_type.signed)
+    if len(raw) != width:
+        unit = "byte" if width == 1 else "bytes"
+        raise BitpackError(f"{int_type.name} needs exactly {width} {unit}, got {len(raw)}")
+    return int.from_bytes(raw, order, signed=int_type.signed)
 
 
 def bools_to_bytes(
-    values: Sequence[bool],
+    values: Iterable[bool | int],
     int_type: IntType,
     *,
     sign_extension: SignExtension = SignExtension.IF_SIGNED,
-    byteorder: ByteOrder = "little",
+    byteorder: ByteOrder = "big",
 ) -> bytes:
-    """Convert a boolean array to a number and then to its bytes."""
+    """``bools_to_number`` followed by ``number_to_bytes``.
+
+    >>> from lvbitpack import U16, bools_to_bytes
+    >>> bools_to_bytes([False, True], U16), bools_to_bytes([False, True], U16, byteorder="little")
+    (b'\\x00\\x02', b'\\x02\\x00')
+    """
+    int_type = check_type(int_type)
+    order = _check_order(byteorder)
     number = bools_to_number(values, int_type, sign_extension=sign_extension)
-    return number_to_bytes(number, int_type, byteorder=byteorder)
+    return number_to_bytes(number, int_type, byteorder=order)
 
 
-def bytes_to_bools(
-    data: bytes, int_type: IntType, *, byteorder: ByteOrder = "little"
-) -> list[bool]:
-    """Read bytes into a number and then into a boolean array, element 0 the LSB."""
+def bytes_to_bools(data: Buffer, int_type: IntType, *, byteorder: ByteOrder = "big") -> list[bool]:
+    """``bytes_to_number`` followed by ``number_to_bools``; element 0 is the low bit.
+
+    >>> from lvbitpack import U16, bytes_to_bools
+    >>> bytes_to_bools(b"\\x00\\x02", U16)[:3]
+    [False, True, False]
+    """
     number = bytes_to_number(data, int_type, byteorder=byteorder)
     return number_to_bools(number, int_type)

@@ -1,35 +1,72 @@
-"""MSB-first bit packing for LabVIEW boolean arrays, without a length header."""
+"""Compact bit packing of Boolean arrays: eight elements per byte, no header.
+
+LabVIEW itself stores a Boolean as one byte; this is the dense form for wire protocols,
+register maps and files that want one bit per element.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable
+from typing import Literal, SupportsIndex
 
-_BYTE = 8
-_HIGH_BIT = 0x80
+from ._errors import BitpackError, Buffer, as_bools, as_buffer, as_int, plain_str, quote
+
+BitOrder = Literal["msb", "lsb"]
 
 
-def pack_bools(values: Sequence[bool]) -> bytes:
-    """Pack booleans into bytes MSB-first, zero-padding the final byte.
+def _check_order(bit_order: object) -> bool:
+    """True for least-significant-bit first."""
+    text = plain_str(bit_order)
+    if text in ("msb", "lsb"):
+        return text == "lsb"
+    raise BitpackError(f"bit_order must be 'msb' or 'lsb', not {quote(bit_order)}")
 
-    The first value occupies the most significant bit (0x80) of the first byte.
-    When the count is not a multiple of eight, the remaining low bits of the
-    last byte stay at zero, matching LabVIEW's packed boolean-array layout.
+
+def pack_bools(values: Iterable[bool | int], *, bit_order: BitOrder = "msb") -> bytes:
+    """Pack Booleans eight to a byte, zero-filling the unused bits of the last byte.
+
+    With ``bit_order="msb"`` (default) element 0 is bit 7 (0x80) of byte 0. With ``"lsb"``
+    element 0 is bit 0 of byte 0, so each byte equals Boolean Array To Number of its eight
+    elements as a U8.
+
+    >>> from lvbitpack import pack_bools
+    >>> array = [True, True, False, True]
+    >>> pack_bools(array), pack_bools(array, bit_order="lsb")
+    (b'\\xd0', b'\\x0b')
     """
-    out = bytearray((len(values) + _BYTE - 1) // _BYTE)
-    for index, value in enumerate(values):
-        if value:
-            out[index // _BYTE] |= _HIGH_BIT >> (index % _BYTE)
+    lsb = _check_order(bit_order)
+    bits = as_bools(values)
+    out = bytearray((len(bits) + 7) // 8)
+    for index, bit in enumerate(bits):
+        if bit:
+            shift = index % 8 if lsb else 7 - index % 8
+            out[index // 8] |= 1 << shift
     return bytes(out)
 
 
-def unpack_bools(data: bytes, count: int) -> list[bool]:
-    """Unpack the first count booleans from MSB-first packed bytes.
+def unpack_bools(
+    data: Buffer, count: SupportsIndex | None = None, *, bit_order: BitOrder = "msb"
+) -> list[bool]:
+    """Unpack ``count`` Booleans (default: every bit) from bytes written by ``pack_bools``.
 
-    count drops the trailing padding bits of the final byte, so it must sit
-    between zero and the number of bits the data can hold.
+    ``count`` drops the fill bits of the last byte; it must be between 0 and ``8 * len(data)``.
+    The fill bits are not checked.
+
+    >>> from lvbitpack import unpack_bools
+    >>> unpack_bools(b"\\xd0", 4)
+    [True, True, False, True]
+    >>> unpack_bools(b"\\x0b", 4, bit_order="lsb")
+    [True, True, False, True]
     """
-    if count < 0:
-        raise ValueError("count must not be negative")
-    if count > len(data) * _BYTE:
-        raise ValueError("data holds fewer bits than count requests")
-    return [bool(data[index // _BYTE] & (_HIGH_BIT >> (index % _BYTE))) for index in range(count)]
+    lsb = _check_order(bit_order)
+    raw = as_buffer(data)
+    total = len(raw) * 8
+    wanted = total if count is None else as_int(count, "count")
+    if wanted < 0:
+        raise BitpackError(f"count must not be negative, got {quote(wanted)}")
+    if wanted > total:
+        raise BitpackError(f"count is {quote(wanted)}, more than the {total} bits in data")
+    return [
+        bool(raw[index // 8] >> (index % 8 if lsb else 7 - index % 8) & 1)
+        for index in range(wanted)
+    ]
