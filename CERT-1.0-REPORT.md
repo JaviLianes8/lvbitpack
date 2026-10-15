@@ -5,7 +5,7 @@ Progress:
 - [x] Baseline gates run on 0.2.0
 - [x] API review and 1.0.0 API changes (item 1)
 - [x] Errors, typing, docstrings and doctests (items 2 to 5)
-- [ ] Real LabVIEW 2026 captures (item 7)
+- [x] Real LabVIEW 2026 captures (item 7)
 - [x] Contract, fuzz and author mutation round (items 6, 9, 18)
 - [x] Docs: README, GUIDE, CHANGELOG (items 11, 12)
 - [ ] Packaging, e2e, every interpreter (items 8, 10, 13, 14)

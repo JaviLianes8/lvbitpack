@@ -1,0 +1,200 @@
+{
+ "labview": "LabVIEW 2026 Community 26.3.1f1 (Windows x64)",
+ "captured": "2026-10-14",
+ "method": "LabVIEW driven through its ActiveX server (LabVIEW.Application) from Python with pywin32. VI Scripting is not reachable over ActiveX, so the test VIs were made from a copy of the shipped example examples/Booleans/Boolean Functions.vi by editing its block diagram heap with pylabview: one node replaced by the Boolean Array To Number (or Number To Boolean Array) primitive, the output representation and Sign Extension Mode set, the VI re-created. LabVIEW loaded, type-propagated, compiled and ran each VI; inputs were set and outputs read over ActiveX, so every output value is LabVIEW's.",
+ "boolean_array_to_number.json": "30 configurations: node output U8, U16, U32, U64, I8, I16, I32, I64 set explicitly, each under the three Sign Extension Mode settings, plus 6 with no explicit output representation (the node's default, read into an I64 and a U64 indicator). Arrays of lengths 0, 1, 2, 3, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64 and 65: all FALSE, all TRUE, alternating both ways and 3 seeded random arrays (seed 20261014); duplicate inputs dropped. Re-encoded compactly from the capture records listed in sources.",
+ "number_to_boolean_array.json": "8 integer types: minimum, maximum, -1, 0, 1 and seeded values; each input was read back unchanged from the control before the run.",
+ "datalog_bool_len*.dat": "front-panel datalog files LabVIEW wrote (LogFilePath + LogAtFinish) for a copy of the same example after Input Array X was set; copied unchanged. Input Array X, element 0 first, per file: {\"datalog_bool_len0.dat\": \"\", \"datalog_bool_len1.dat\": \"1\", \"datalog_bool_len8.dat\": \"10110010\", \"datalog_bool_len9.dat\": \"010011011\", \"datalog_bool_len17.dat\": \"01000110001111100\", \"datalog_bool_len300.dat\": \"000011111111011000101000011011001011001111100110111011100101011011101000100010010110011111011110010100111110110110111011110011000010001101101011101100001101001001011110010001011000010100000100001011011001010111100010011010111011101011110010101100101101111000101000011011101110111011110111101100001101\"}",
+ "sources": {
+  "bat_int16_always.json": {
+   "size": 31369,
+   "sha256": "f99cbf3b3d6a21420f8c81a7d7d84e240dbe7303c4477eb19cbf6f4a0c178428"
+  },
+  "bat_int16_if_output_is_signed.json": {
+   "size": 31395,
+   "sha256": "5f784b6a24b0e323df442f5782ec8617188c6165423aac77ae9226d0f695e9ff"
+  },
+  "bat_int16_never.json": {
+   "size": 31352,
+   "sha256": "75d705c093419f0facf195de03298314439d8f10b7d31b954f9c0b1cdad746bb"
+  },
+  "bat_int32_always.json": {
+   "size": 31513,
+   "sha256": "847686218621ca3357aacad58084981b4b3a02eab5893e15c4ee309ff135cead"
+  },
+  "bat_int32_if_output_is_signed.json": {
+   "size": 31539,
+   "sha256": "8365d46be25a1e470d37fc320f0b7927e3e3ae91ec14405d63fff013c64e9098"
+  },
+  "bat_int32_never.json": {
+   "size": 31508,
+   "sha256": "13e50722b64f4c31c8fb0eaf7874aa667b8322796def1f3cae7a8bda31475a79"
+  },
+  "bat_int64_always.json": {
+   "size": 31653,
+   "sha256": "d82f8d7533af4c872e8298dcb54f402dfef5925ca975994b0c12183915f40b84"
+  },
+  "bat_int64_if_output_is_signed.json": {
+   "size": 31679,
+   "sha256": "85fad9bb75c6712211e6cb116c6101eacbff720902cfbee973f29fb0e8d4ea31"
+  },
+  "bat_int64_never.json": {
+   "size": 31676,
+   "sha256": "71f85d5fdb263ad5e2f266f2bf8b5ae41f49c342f729ee369174377cafd58b9d"
+  },
+  "bat_int64_no_override_always.json": {
+   "size": 31810,
+   "sha256": "ab129b3cb0867c903f5f18e6407440cf5087fec5865a2e1ba5dc310ffcb9ae8f"
+  },
+  "bat_int64_no_override_if_output_is_signed.json": {
+   "size": 31587,
+   "sha256": "fbdfd3ec689b241a3a98376ead7b983d8ba1a548ccaea4e707de3cd0ed7dfbb2"
+  },
+  "bat_int64_no_override_never.json": {
+   "size": 31554,
+   "sha256": "524be00e6125bc0e4b3f6858051d7fae98f2f7e743a1e405d2f11fd5e2267120"
+  },
+  "bat_int8_always.json": {
+   "size": 31244,
+   "sha256": "90d81d30625eb3be87d1a430e497e3d563f40620c62dd4c37d4d9b46cca8bc43"
+  },
+  "bat_int8_if_output_is_signed.json": {
+   "size": 31270,
+   "sha256": "42efccad7b33ce3b03fe818248529ad7a1f32a3c3556b17f0a270c007f1d1cc2"
+  },
+  "bat_int8_never.json": {
+   "size": 31226,
+   "sha256": "50d2e7c791109fd5961e5a7bcbf7e4118cd1d77bb0e822b964697629bfdb02a6"
+  },
+  "bat_uint16_always.json": {
+   "size": 31447,
+   "sha256": "48397e5b8ebf00ef663c5dbb39297348431f420a6441b2f4ebd5c80a96393b07"
+  },
+  "bat_uint16_if_output_is_signed.json": {
+   "size": 31398,
+   "sha256": "9566918dbf92e3bddba4475f5c68bb535c07fced7c887625b2c5c434af546615"
+  },
+  "bat_uint16_never.json": {
+   "size": 31365,
+   "sha256": "ff951c93956aa52129ff47740f218e5b3eaddf17f14857e81227a3b66ce6b453"
+  },
+  "bat_uint32_always.json": {
+   "size": 31799,
+   "sha256": "69f57c9e22e760538bcd52dce441323c953de810d1825b0c744aa6c14f4cfa90"
+  },
+  "bat_uint32_if_output_is_signed.json": {
+   "size": 31576,
+   "sha256": "ac2a412ce0e19f68c1e760bc2fa379fdbc8cd2852702d5ab6572b44e0758f0bc"
+  },
+  "bat_uint32_never.json": {
+   "size": 31543,
+   "sha256": "e8abb80f412416dc04336449bd3af3f0233ff83ff4a3a07218ce1c4aea9e9669"
+  },
+  "bat_uint64_always.json": {
+   "size": 32423,
+   "sha256": "232d38dc556ca046118374e0af9214e40268c137bfab613e8e0e0b3c774e1b51"
+  },
+  "bat_uint64_if_output_is_signed.json": {
+   "size": 31747,
+   "sha256": "a419af899097b7df29107e281b57e2d2ac3211a5ba4240df2896519c0227619a"
+  },
+  "bat_uint64_never.json": {
+   "size": 31714,
+   "sha256": "ef5df209ed445da47195cd27b9bb6408b0bee94e38bd2424d5f45a2ace018c55"
+  },
+  "bat_uint64_no_override_always.json": {
+   "size": 31812,
+   "sha256": "74ba48f7c8fdf71256e4719ec772c2e074af7a62260d9f2158332aea30018e10"
+  },
+  "bat_uint64_no_override_if_output_is_signed.json": {
+   "size": 31589,
+   "sha256": "ff53ac74f5bef59ad49bf86d61f4e6328e5a182e3a7a908ad00a6c79cc5ccc82"
+  },
+  "bat_uint64_no_override_never.json": {
+   "size": 31556,
+   "sha256": "3d1c39e8349d6fc6a8a129c1594d3d4c884393a6e005820711e64ad85d3ed32d"
+  },
+  "bat_uint8_always.json": {
+   "size": 31270,
+   "sha256": "d64587cc4406e55d0ad9442eb15e0ee5e13fcc60b2da7503ce9278a4fe6ea577"
+  },
+  "bat_uint8_if_output_is_signed.json": {
+   "size": 31271,
+   "sha256": "81995767c979946323c7471c1deaab8d2c7380e1ea6d14f9c546de5e5e14870f"
+  },
+  "bat_uint8_never.json": {
+   "size": 31238,
+   "sha256": "8189e71b516b1ea827e7a085944a61d1eb9d06f2fcadd3c7b5377a0b20d19dc5"
+  },
+  "nba_int16.json": {
+   "size": 5888,
+   "sha256": "f45439b413d91b1e8faa410fcbca4ee817d3e9f8440f69062311fa11ceab089d"
+  },
+  "nba_int32.json": {
+   "size": 9518,
+   "sha256": "a0f069021717c828faea02f56462ec11fff3c112bf1ec8bf7de5e0ee7dcd23d5"
+  },
+  "nba_int64.json": {
+   "size": 16764,
+   "sha256": "786e276c3ff1851fb5da51758df963b0320fb2cd90a43a598f504f315f4f7011"
+  },
+  "nba_int8.json": {
+   "size": 3790,
+   "sha256": "193d7e7ffe90ae16b5c930afcc6d4c4d59a3287efffe0509e1a6c4007fd65a26"
+  },
+  "nba_uint16.json": {
+   "size": 4844,
+   "sha256": "b78be27f04a841ece3171563862f233d0df26799fc5d958eeba4e9ee75daae51"
+  },
+  "nba_uint32.json": {
+   "size": 7812,
+   "sha256": "150b045d9bca13cc2dd5365772794d453b242b86e9ddc95a81155b115223d283"
+  },
+  "nba_uint64.json": {
+   "size": 13758,
+   "sha256": "c5604614e1d58f86885436a37a28e95a3233b908777aba67cd18ef36983fac49"
+  },
+  "nba_uint8.json": {
+   "size": 3364,
+   "sha256": "ea79c01c533d3d8b5dc66d9cf825738cd1bf17304fb151f0b47dba2e339618ce"
+  },
+  "datalog_bool.json": {
+   "size": 14222,
+   "sha256": "13d4347a94c62e3866dd7d21f4d2b8bbb9173b3d6ffbc646c15a636dfebb2975"
+  }
+ },
+ "files": {
+  "boolean_array_to_number.json": {
+   "size": 112291,
+   "sha256": "94eea7670ab66e5ae48e0df8d266e7aa8e0c1169039e8347e490923537572251"
+  },
+  "datalog_bool_len0.dat": {
+   "size": 1575,
+   "sha256": "be217d13d2872e2e2e5b3e4d4d510d88bebf3b4459343e04d3e0ae620306845a"
+  },
+  "datalog_bool_len1.dat": {
+   "size": 1576,
+   "sha256": "f7d2abc0dbd4ffa61febe137288f57943ae6c938fd874dbaa716e8266e43065b"
+  },
+  "datalog_bool_len17.dat": {
+   "size": 1592,
+   "sha256": "6bbc05a1bd6dff5bf8fe16784ff59f183207161ffd4f4e5984d5d6add1c58ccc"
+  },
+  "datalog_bool_len300.dat": {
+   "size": 1875,
+   "sha256": "9ff6a7460e1a43687c9f7a9e588bfeb8ace24c50ffe550b208f712738c86abb7"
+  },
+  "datalog_bool_len8.dat": {
+   "size": 1583,
+   "sha256": "72d9c552eb59758488491bb53f33cbdd88a5157b9a221b9a79e55140303147f2"
+  },
+  "datalog_bool_len9.dat": {
+   "size": 1584,
+   "sha256": "cda80172674b449f2152be6100f954348782ef96cb0f1d54c8d8e12bf7538bb3"
+  },
+  "number_to_boolean_array.json": {
+   "size": 8962,
+   "sha256": "6d539fad081d67f2ab2cc02390792da4f46442c26bce65bdd299662efdaaef57"
+  }
+ }
+}

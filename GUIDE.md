@@ -38,7 +38,14 @@ array as the binary form of one integer. Element 0 is the least significant bit.
 
 ```
 
-A signed output is the two's complement value. An empty array is 0 in every mode.
+A signed output is the two's complement value. An empty array is 0 in every mode. A node
+placed in LabVIEW 2026 without choosing an output representation gives a U32, so pass `U32`
+to match it.
+
+Every rule above is checked against LabVIEW 2026 itself: the test suite replays about 2,900
+Boolean Array To Number results (all eight types under the three modes, arrays of 0 to 65
+elements), about 200 Number To Boolean Array results and six front-panel datalog files,
+all produced by LabVIEW on the author's machine (see `tests/fixtures/labview2026`).
 
 ## Number To Boolean Array
 
