@@ -1,5 +1,7 @@
 # lvbitpack
 
+[![Lianes8 Certified](https://lianes8studio.com/certified/lianes8-certified-badge.svg)](https://lianes8studio.com/certified)
+
 LabVIEW Boolean arrays in pure Python: **Boolean Array To Number** with its three sign
 extension modes, **Number To Boolean Array**, the flattened form LabVIEW writes for a Boolean
 array, and compact bit packing. No dependencies, fully typed, Python 3.10 or newer.
